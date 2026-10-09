@@ -5,7 +5,7 @@
 **Erased Turkic place names of South Azerbaijan**
 **Güney Azerbaycan'ın silinen Türkçe yer adları**
 **Güney Azərbaycanın silinən türk yer adları**
-**نام‌های ترکی زدوده‌شدهٔ آذربایجان جنوبی**
+**نام‌های ترکی تغییر داده شده آذربایجان جنوبی**
 
 🌐 **[Open the map → https://KULLANICI-ADINIZ.github.io/adlarimiz/](https://KULLANICI-ADINIZ.github.io/adlarimiz/)**
 
