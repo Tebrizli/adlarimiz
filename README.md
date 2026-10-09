@@ -7,7 +7,7 @@
 **Güney Azərbaycanın silinən türk yer adları**
 **نام‌های ترکی تغییر داده شده آذربایجان جنوبی**
 
-🌐 **[Open the map → https://KULLANICI-ADINIZ.github.io/adlarimiz/](https://KULLANICI-ADINIZ.github.io/adlarimiz/)**
+🌐 **[Open the map → https://KULLANICI-ADINIZ.github.io/adlarimiz/](https://tebrizli.github.io/adlarimiz/)**
 
 [English](#english) · [Türkçe](#türkçe) · [Azərbaycan türkcəsi](#azərbaycan-türkcəsi) · [فارسی](#فارسی)
 
