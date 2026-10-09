@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Adlarımız — Erased Place Names of South Azerbaijan</title>
+<meta name="description" content="Community map of Turkic place names in South Azerbaijan (north-west Iran) replaced with Persian names over the last century. Explore, search and suggest renamed places — in English, Azerbaijani Turkish and Persian.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Adlarımız — Erased Turkic place names of South Azerbaijan">
+<meta property="og:description" content="Towns, rivers and mountains of South Azerbaijan renamed from Turkish to Persian — on one map, with history and sources. Help document them.">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%23c8102e' d='M16 2c-5.5 0-10 4.3-10 9.7C6 19 16 30 16 30s10-11 10-18.3C26 6.3 21.5 2 16 2z'/%3E%3Ccircle cx='16' cy='12' r='4' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&family=Vazirmatn:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <svg class="logo" viewBox="0 0 32 32" aria-hidden="true"><path fill="currentColor" d="M16 2c-5.5 0-10 4.3-10 9.7C6 19 16 30 16 30s10-11 10-18.3C26 6.3 21.5 2 16 2z"/><circle cx="16" cy="12" r="4" fill="#0b2545"/></svg>
+    <div>
+      <div class="title" data-i18n="siteTitle"></div>
+      <div class="sub" data-i18n="siteSub"></div>
+    </div>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-view="map" data-i18n="navMap"></button>
+    <button class="tab" data-view="history" data-i18n="navHistory"></button>
+  </nav>
+  <div class="langs" role="group" aria-label="Language">
+    <button data-lang="en">EN</button>
+    <button data-lang="tr">TR</button>
+    <button data-lang="az">AZ</button>
+    <button data-lang="fa">فا</button>
+  </div>
+</header>
+
+<main id="view-map" class="view">
+  <aside class="sidebar" id="sidebar">
+    <div class="search-wrap">
+      <input id="search" type="search" autocomplete="off">
+      <button id="geo-search" class="link-btn" hidden></button>
+    </div>
+    <div class="filters">
+      <button class="chip active" data-filter="all" data-i18n="all"></button>
+      <button class="chip" data-filter="changed" data-i18n="changed"></button>
+      <button class="chip" data-filter="restored" data-i18n="restored"></button>
+    </div>
+    <div class="count" id="count"></div>
+    <ul class="list" id="list"></ul>
+    <footer class="foot" data-i18n="footer"></footer>
+  </aside>
+  <div class="map-wrap">
+    <div id="map"></div>
+    <button id="suggest-btn" class="fab"><span>+</span> <span data-i18n="suggest"></span></button>
+    <div id="pick-hint" class="pick-hint" hidden data-i18n="pickHint"></div>
+    <button id="toggle-list" class="toggle-list" aria-label="List">☰</button>
+  </div>
+</main>
+
+<section id="view-history" class="view history" hidden>
+  <article id="history-body" class="article"></article>
+</section>
+
+<dialog id="form-dlg">
+  <form id="suggest-form" method="dialog" novalidate>
+    <h3 id="f-title"></h3>
+    <p class="fix-hint" id="f-hint" hidden></p>
+    <p class="coords" id="f-coords"></p>
+    <label><span data-i18n="fOriginal"></span><input name="originalLatin" required maxlength="120"></label>
+    <label><span data-i18n="fOriginalAr"></span><input name="originalArabic" dir="rtl" maxlength="120"></label>
+    <label><span data-i18n="fPersian"></span><input name="persianFa" dir="rtl" required maxlength="120"></label>
+    <label><span data-i18n="fPersianLatin"></span><input name="persianLatin" maxlength="120"></label>
+    <div class="row">
+      <label><span data-i18n="fType"></span><select name="type" id="f-type"></select></label>
+      <label><span data-i18n="fProvince"></span><input name="province" maxlength="80"></label>
+    </div>
+    <label><span data-i18n="fPeriod"></span><input name="period" maxlength="80"></label>
+    <label><span data-i18n="fDesc"></span><textarea name="description" rows="4" required maxlength="2000"></textarea></label>
+    <label><span data-i18n="fSource"></span><input name="source" type="url" maxlength="400"></label>
+    <label><span data-i18n="fNick"></span><input name="nickname" maxlength="40"></label>
+    <input name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <p class="safety" data-i18n="safety"></p>
+    <p class="msg" id="f-msg" role="status"></p>
+    <div class="actions">
+      <button type="button" id="f-cancel" class="btn ghost" data-i18n="cancel"></button>
+      <button type="submit" class="btn primary" data-i18n="send"></button>
+    </div>
+  </form>
+</dialog>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="config.js"></script>
+<script src="data/places.js"></script>
+<script src="assets/i18n.js"></script>
+<script src="assets/history.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
