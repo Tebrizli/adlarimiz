@@ -26,8 +26,10 @@
   .sidebar{height:min(55vh, var(--vvh, 100vh) - 70px);max-height:calc(var(--vvh, 100vh) - 70px)}
   .sidebar::before{content:"";display:block;width:40px;height:4px;border-radius:2px;background:#cfd6de;margin:8px auto 0}
 }
-/* ===== machine-translated descriptions ===== */
-.mt-note{display:inline-block;margin-inline-start:6px;font-size:.68rem;font-weight:600;color:var(--muted);background:#f1f3f6;border-radius:4px;padding:0 5px;vertical-align:middle;cursor:help}
+/* ===== automatic translation under a suggestion ===== */
+.mt-box{margin:-2px 0 8px;padding:7px 10px;border-inline-start:3px solid var(--blue);background:#f2f9fc;border-radius:0 6px 6px 0}
+.mt-box .mt-label{font-size:.7rem;font-weight:700;color:var(--muted);margin-bottom:2px}
+.mt-box .mt-text{font-size:.86rem;line-height:1.45;color:var(--ink)}
 </style>
 </head>
 <body>
@@ -111,80 +113,123 @@
 <script src="data/places.js"></script>
 <script src="assets/i18n.js"></script>
 <script src="assets/history.js"></script>
+<script>
+/* ===== Runs BEFORE app.js: choose the start language =====
+   Priority: ?lang=  >  language the visitor clicked in this browser session  >  language from country (IP)
+   The country result is cached so the right language appears immediately on later visits. */
+(function () {
+  try {
+    var q = new URLSearchParams(location.search).get("lang");
+    var manual = sessionStorage.getItem("langManual");
+    var geo = localStorage.getItem("geoLang");
+    if (!q) localStorage.setItem("lang", manual || geo || "en");
+  } catch (e) {}
+})();
+</script>
 <script src="assets/app.js"></script>
 <script>
 /* ======================================================================
    Extras kept inside index.html:
-   1) first-visit language by country (IP)   2) mobile list sheet closing
-   3) automatic translation of descriptions missing in the chosen language
+   1) language by visitor's country (IP)   2) closable mobile list sheet
+   3) suggestions: original text + automatic translation below it
+   Add ?debug=1 to the address to see a diagnostic panel.
    ====================================================================== */
 (function () {
   "use strict";
   var $ = function (s) { return document.querySelector(s); };
   var sidebar = $("#sidebar");
   var curLang = function () { return document.documentElement.lang || "en"; };
+  var DEBUG = /[?&]debug=1/.test(location.search);
+  var dbgBox = null;
+  function log() {
+    var msg = Array.prototype.slice.call(arguments).join(" ");
+    try { console.info("[Adlarimiz]", msg); } catch (e) {}
+    if (!DEBUG) return;
+    if (!dbgBox) {
+      dbgBox = document.createElement("div");
+      dbgBox.style.cssText = "position:fixed;z-index:3000;left:8px;bottom:8px;max-width:min(520px,94vw);max-height:40vh;overflow:auto;background:#111;color:#9f9;font:12px/1.4 monospace;padding:8px 10px;border-radius:8px;opacity:.92;white-space:pre-wrap";
+      document.body.appendChild(dbgBox);
+    }
+    dbgBox.textContent += msg + "\n";
+  }
+  function getJSON(url, ms) {
+    var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, ms || 3500);
+    return fetch(url, { signal: c.signal, cache: "no-store" })
+      .then(function (r) { clearTimeout(t); if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
+      .then(function (txt) { try { return JSON.parse(txt); } catch (e) { return txt; } });
+  }
 
-  /* ---------- 1) Language by visitor's country (first visit only) ---------- */
+  /* ---------- 1) Language by visitor's country ---------- */
   (function () {
     var LANG_BY_COUNTRY = { TR: "tr", AZ: "az", IR: "fa" };
     var LANG_BY_TZ = { "Europe/Istanbul": "tr", "Asia/Istanbul": "tr", "Asia/Baku": "az", "Asia/Tehran": "fa" };
-    if (new URLSearchParams(location.search).get("lang")) return;        // explicit ?lang= wins
-    var stored = null; try { stored = localStorage.getItem("lang"); } catch (e) {}
-    if (stored) return;                                                   // the visitor already chose a language
     var userClicked = false;
-    document.querySelectorAll(".langs button").forEach(function (b) { b.addEventListener("click", function (e) { if (e.isTrusted) userClicked = true; }); });
+    document.querySelectorAll(".langs button").forEach(function (b) {
+      b.addEventListener("click", function (e) {
+        if (!e.isTrusted) return;                                        // ignore our own programmatic clicks
+        userClicked = true;
+        try { sessionStorage.setItem("langManual", b.dataset.lang); } catch (x) {}
+      });
+    });
+    var manual = null; try { manual = sessionStorage.getItem("langManual"); } catch (e) {}
+    if (new URLSearchParams(location.search).get("lang") || manual) { log("lang: manual/URL choice kept ->", curLang()); return; }
 
-    function apply(lang) {
-      if (userClicked || !lang || lang === curLang()) return;
+    function apply(lang, why) {
+      lang = lang || "en";
+      try { localStorage.setItem("geoLang", lang); } catch (e) {}
+      log("lang: " + why + " -> " + lang);
+      if (userClicked || lang === curLang()) return;
       var btn = document.querySelector('.langs button[data-lang="' + lang + '"]');
-      if (!btn) return;
-      btn.click();
-      try { localStorage.removeItem("lang"); } catch (e) {}              // don't lock it in: detect again next visit
+      if (btn) btn.click();
     }
-    function get(url, pick, ms) {
-      var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, ms || 2500);
-      return fetch(url, { signal: c.signal, cache: "no-store" }).then(function (r) { return r.json(); })
-        .then(function (j) { clearTimeout(t); var cc = pick(j); if (!cc) throw 0; return String(cc).toUpperCase(); });
-    }
-    var tzLang = null;
-    try { tzLang = LANG_BY_TZ[Intl.DateTimeFormat().resolvedOptions().timeZone] || null; } catch (e) {}
-    get("https://api.country.is/", function (j) { return j.country; })
-      .catch(function () { return get("https://get.geojs.io/v1/ip/country.json", function (j) { return j.country; }); })
-      .catch(function () { return get("https://ipwho.is/?fields=country_code", function (j) { return j.country_code; }); })
-      .then(function (cc) { apply(LANG_BY_COUNTRY[cc] || "en"); })
-      .catch(function () { apply(tzLang); });                            // no network answer: use the device time zone
+    var PROVIDERS = [
+      ["country.is", "https://api.country.is/", function (j) { return j.country; }],
+      ["geojs", "https://get.geojs.io/v1/ip/country.json", function (j) { return j.country; }],
+      ["ipapi.co", "https://ipapi.co/country/", function (j) { return String(j).trim(); }],
+      ["ipwho.is", "https://ipwho.is/?fields=country_code", function (j) { return j.country_code; }],
+      ["cloudflare", "https://www.cloudflare.com/cdn-cgi/trace", function (t) { var m = /loc=([A-Z]{2})/.exec(String(t)); return m && m[1]; }]
+    ];
+    (function next(i) {
+      if (i >= PROVIDERS.length) {
+        var tz = ""; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) {}
+        return apply(LANG_BY_TZ[tz] || "en", "all IP services failed, time zone " + tz);
+      }
+      var p = PROVIDERS[i];
+      getJSON(p[1]).then(function (j) {
+        var cc = p[2](j); if (!cc || !/^[A-Za-z]{2}$/.test(cc)) throw new Error("no country in answer");
+        cc = cc.toUpperCase();
+        apply(LANG_BY_COUNTRY[cc] || "en", "country " + cc + " via " + p[0]);
+      }).catch(function (err) { log("geo: " + p[0] + " failed (" + (err && err.message || err) + ")"); next(i + 1); });
+    })(0);
   })();
 
   /* ---------- 2) Mobile: closable list sheet ---------- */
   (function () {
     var close = function () { sidebar.classList.remove("open"); var s = $("#search"); if (s) s.blur(); };
     $("#sheet-close").addEventListener("click", close);
-    // tap on the visible map closes the sheet
     $(".map-wrap").addEventListener("pointerdown", function (e) {
       if (sidebar.classList.contains("open") && !e.target.closest("#toggle-list")) close();
     }, true);
     document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
-    // the keyboard's "search" key hides the keyboard so the results are visible
     $("#search").addEventListener("keydown", function (e) { if (e.key === "Enter" && window.innerWidth <= 760) e.target.blur(); });
-    // keep the sheet above the on-screen keyboard
     var setVvh = function () { var h = window.visualViewport ? window.visualViewport.height : window.innerHeight; document.documentElement.style.setProperty("--vvh", h + "px"); };
     setVvh();
     if (window.visualViewport) window.visualViewport.addEventListener("resize", setVvh);
     window.addEventListener("resize", setVvh);
   })();
 
-  /* ---------- 3) Auto-translate descriptions that are not in the site language ---------- */
+  /* ---------- 3) Suggestions: keep the original, add a translation under it ---------- */
   (function () {
-    var NOTE = { en: "Machine-translated", tr: "Otomatik çeviri", az: "Avtomatik tərcümə", fa: "ترجمهٔ خودکار" };
-    var SHOW_ORIG = { en: "Original", tr: "Orijinal", az: "Orijinal", fa: "متن اصلی" };
+    var LABEL = { en: "Automatic translation", tr: "Otomatik çeviri", az: "Avtomatik tərcümə", fa: "ترجمهٔ خودکار" };
+    var LOADING = { en: "Translating…", tr: "Çevriliyor…", az: "Tərcümə edilir…", fa: "در حال ترجمه…" };
     var WORDS = {
       en: ["the","and","of","was","is","to","in","by","from","its","were","which","after","renamed","name","called","village","town","city","officially","locals","still"],
-      tr: ["ve","ile","olarak","için","yapıldı","edildi","değiştirildi","oldu","değil","hâlâ","şimdi","yerel","resmî","resmen","şehir","köy","adını","adıyla","sonra","eski","halk","yerine"],
-      az: ["və","ilə","kimi","üçün","edilib","olub","adlanır","adlandırılıb","dəyişdirilib","deyil","hələ","indi","yerli","rəsmi","şəhər","kənd","adını","sonra","köhnə","xalq","əvəzinə"]
+      tr: ["ve","ile","olarak","için","yapıldı","edildi","değiştirildi","oldu","değil","hâlâ","şimdi","yerel","resmî","resmen","şehir","köy","adını","adıyla","eski","halk","yerine"],
+      az: ["və","ilə","kimi","üçün","edilib","olub","adlanır","adlandırılıb","dəyişdirilib","deyil","hələ","indi","yerli","rəsmi","şəhər","kənd","köhnə","xalq","əvəzinə"]
     };
     var cache = {};
-    try { cache = JSON.parse(sessionStorage.getItem("mtCache") || "{}"); } catch (e) {}
-    var save = function () { try { sessionStorage.setItem("mtCache", JSON.stringify(cache)); } catch (e) {} };
+    try { cache = JSON.parse(localStorage.getItem("mtCache2") || "{}"); } catch (e) {}
+    var save = function () { try { localStorage.setItem("mtCache2", JSON.stringify(cache)); } catch (e) {} };
 
     function guess(text) {
       var ar = (text.match(/[؀-ۿ]/g) || []).length, lat = (text.match(/[A-Za-zÀ-žəƏ]/g) || []).length;
@@ -196,78 +241,85 @@
         if (n > bestN) { second = bestN; bestN = n; best = l; } else if (n > second) second = n;
       });
       if (bestN >= 1 && bestN > second) return best;
-      // no clear function words: fall back to letters (ə only in Azerbaijani, ı/ş/ğ in Turkish)
       if (/[əƏ]/.test(text)) return "az";
       if (/[ıİşŞğĞ]/.test(text)) return "tr";
-      return null;                                                         // not sure -> let the translator detect
+      return null;
     }
 
-    function google(text, tl) {
-      var url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=" + tl + "&dt=t&q=" + encodeURIComponent(text);
-      return fetch(url).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (j) {
-        var out = (j[0] || []).map(function (s) { return s[0]; }).join("");
-        return { text: out, from: j[2] };
-      });
-    }
-    function mymemory(text, from, tl) {
-      var url = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(text.slice(0, 480)) + "&langpair=" + (from || "en") + "|" + tl;
-      return fetch(url).then(function (r) { return r.json(); }).then(function (j) {
-        if (!j || !j.responseData || j.responseStatus != 200) throw 0;
-        return { text: j.responseData.translatedText, from: from };
-      });
-    }
+    // Several free, key-less translators; the first that answers wins.
+    var TRANSLATORS = [
+      ["google", function (text, tl) {
+        return getJSON("https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=" + tl + "&dt=t&q=" + encodeURIComponent(text), 6000)
+          .then(function (j) { return { text: (j[0] || []).map(function (s) { return s[0]; }).join(""), from: j[2] }; });
+      }],
+      ["google-dict", function (text, tl) {
+        return getJSON("https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=auto&tl=" + tl + "&q=" + encodeURIComponent(text), 6000)
+          .then(function (j) {
+            var first = Array.isArray(j) ? j[0] : null;
+            if (Array.isArray(first)) return { text: first[0], from: first[1] };
+            if (typeof first === "string") return { text: first, from: null };
+            if (j && j.sentences) return { text: j.sentences.map(function (s) { return s.trans || ""; }).join(""), from: j.src };
+            throw new Error("unexpected answer");
+          });
+      }],
+      ["lingva", function (text, tl, g) {
+        return getJSON("https://lingva.ml/api/v1/auto/" + tl + "/" + encodeURIComponent(text), 7000)
+          .then(function (j) { return { text: j.translation, from: j.info && j.info.detectedSource }; });
+      }],
+      ["mymemory", function (text, tl, g) {
+        return getJSON("https://api.mymemory.translated.net/get?q=" + encodeURIComponent(text.slice(0, 480)) + "&langpair=" + (g || "en") + "|" + tl, 7000)
+          .then(function (j) { if (!j || !j.responseData || Number(j.responseStatus) !== 200) throw new Error("status " + (j && j.responseStatus)); return { text: j.responseData.translatedText, from: g }; });
+      }]
+    ];
+
     function translate(text, tl) {
       var key = tl + "|" + text;
-      if (cache[key] !== undefined) return Promise.resolve(cache[key]);
+      if (Object.prototype.hasOwnProperty.call(cache, key)) return Promise.resolve(cache[key]);
       var g = guess(text);
-      if (g === tl) return Promise.resolve(null);
-      return google(text, tl)
-        .catch(function () { return mymemory(text, g, tl); })
-        .then(function (r) {
-          var res = (!r || !r.text || r.from === tl || r.text.trim() === text.trim()) ? null : r.text;
+      return (function next(i) {
+        if (i >= TRANSLATORS.length) { log("translate: all services failed"); return Promise.resolve(undefined); }
+        var tr = TRANSLATORS[i];
+        return tr[1](text, tl, g).then(function (r) {
+          if (!r || !r.text) throw new Error("empty");
+          log("translate: ok via " + tr[0] + " (from " + (r.from || g || "?") + " to " + tl + ")");
+          var same = (r.from && String(r.from).slice(0, 2) === tl) || r.text.trim() === text.trim();
+          var res = same ? null : r.text;                                  // null = text already in this language
           cache[key] = res; save(); return res;
-        })
-        .catch(function () { return null; });
+        }).catch(function (err) { log("translate: " + tr[0] + " failed (" + (err && err.message || err) + ")"); return next(i + 1); });
+      })(0);
     }
 
-    // small queue so a long list does not fire dozens of requests at once
-    var queue = [], running = 0;
-    function pump() {
-      while (running < 3 && queue.length) {
-        var job = queue.shift(); running++;
-        job().then(function () { running--; pump(); });
-      }
-    }
-
-    function handle(el) {
-      if (el.dataset.mtDone) return;
-      el.dataset.mtDone = "1";
-      var text = el.textContent.trim(), tl = curLang();
-      if (text.length < 8) return;
-      if (guess(text) === tl) return;                                      // already in the right language
-      queue.push(function () {
-        return translate(text, tl).then(function (res) {
-          if (!res || !el.isConnected || curLang() !== tl) return;
-          el.textContent = res;
-          var n = document.createElement("span");
-          n.className = "mt-note"; n.textContent = NOTE[tl] || NOTE.en;
-          n.title = (SHOW_ORIG[tl] || "Original") + ": " + text;
-          el.appendChild(n);
-        });
+    function handlePopup(pop) {
+      if (pop.dataset.mtDone) return;
+      pop.dataset.mtDone = "1";
+      if (!pop.querySelector(".tag.user")) return;                       // only community suggestions
+      var p = pop.querySelector(":scope > p");
+      if (!p) return;
+      var text = p.textContent.trim(), tl = curLang();
+      if (text.length < 3) return;
+      if (guess(text) === tl) { log("translate: text already looks " + tl + ", skipped"); return; }
+      var box = document.createElement("div");
+      box.className = "mt-box"; box.setAttribute("dir", tl === "fa" ? "rtl" : "ltr");
+      box.innerHTML = '<div class="mt-label"></div><div class="mt-text"></div>';
+      box.querySelector(".mt-label").textContent = "↳ " + (LABEL[tl] || LABEL.en);
+      box.querySelector(".mt-text").textContent = LOADING[tl] || LOADING.en;
+      p.insertAdjacentElement("afterend", box);
+      p.setAttribute("dir", "auto");
+      translate(text, tl).then(function (res) {
+        if (!box.isConnected) return;
+        if (!res) { box.remove(); return; }                                // same language or no service answered
+        box.querySelector(".mt-text").textContent = res;
       });
-      pump();
     }
 
-    var SEL = ".pop p, .item .desc";
     function scan(root) {
       if (!root.querySelectorAll) return;
-      if (root.matches && root.matches(SEL)) handle(root);
-      root.querySelectorAll(SEL).forEach(handle);
+      if (root.matches && root.matches(".pop")) handlePopup(root);
+      root.querySelectorAll(".pop").forEach(handlePopup);
     }
     new MutationObserver(function (muts) {
       muts.forEach(function (m) { m.addedNodes.forEach(function (n) { if (n.nodeType === 1) scan(n); }); });
     }).observe(document.body, { childList: true, subtree: true });
-    scan(document.body);
   })();
 })();
 </script>
