@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Adlarımız — Erased Place Names of South Azerbaijan</title>
-<meta name="description" content="Community map of Turkic place names in South Azerbaijan (north-west Iran) replaced with Persian names over the last century. Explore, search and suggest renamed places — in English, Azerbaijani Turkish and Persian.">
+<meta name="description" content="Community map of Turkic place names in South Azerbaijan (north-west Iran) replaced with Persian names over the last century. Explore, search and suggest renamed places — in English, Turkish, Azerbaijani Turkish and Persian.">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Adlarımız — Erased Turkic place names of South Azerbaijan">
 <meta property="og:description" content="Towns, rivers and mountains of South Azerbaijan renamed from Turkish to Persian — on one map, with history and sources. Help document them.">
@@ -15,6 +15,20 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&family=Vazirmatn:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <link rel="stylesheet" href="assets/style.css">
+<style>
+/* ===== Mobile list sheet: close button + fit above keyboard ===== */
+.sheet-close{display:none}
+@media (max-width:760px){
+  .search-wrap{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+  .search-wrap #search{flex:1;min-width:0}
+  .search-wrap #geo-search{flex-basis:100%}
+  .sheet-close{display:flex;align-items:center;justify-content:center;flex:none;width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:#fff;color:var(--ink);font-size:1.3rem;line-height:1;cursor:pointer}
+  .sidebar{height:min(55vh, var(--vvh, 100vh) - 70px);max-height:calc(var(--vvh, 100vh) - 70px)}
+  .sidebar::before{content:"";display:block;width:40px;height:4px;border-radius:2px;background:#cfd6de;margin:8px auto 0}
+}
+/* ===== machine-translated descriptions ===== */
+.mt-note{display:inline-block;margin-inline-start:6px;font-size:.68rem;font-weight:600;color:var(--muted);background:#f1f3f6;border-radius:4px;padding:0 5px;vertical-align:middle;cursor:help}
+</style>
 </head>
 <body>
 <header class="topbar">
@@ -40,7 +54,8 @@
 <main id="view-map" class="view">
   <aside class="sidebar" id="sidebar">
     <div class="search-wrap">
-      <input id="search" type="search" autocomplete="off">
+      <input id="search" type="search" autocomplete="off" enterkeyhint="search">
+      <button type="button" class="sheet-close" id="sheet-close" aria-label="Close">✕</button>
       <button id="geo-search" class="link-btn" hidden></button>
     </div>
     <div class="filters">
@@ -97,5 +112,164 @@
 <script src="assets/i18n.js"></script>
 <script src="assets/history.js"></script>
 <script src="assets/app.js"></script>
+<script>
+/* ======================================================================
+   Extras kept inside index.html:
+   1) first-visit language by country (IP)   2) mobile list sheet closing
+   3) automatic translation of descriptions missing in the chosen language
+   ====================================================================== */
+(function () {
+  "use strict";
+  var $ = function (s) { return document.querySelector(s); };
+  var sidebar = $("#sidebar");
+  var curLang = function () { return document.documentElement.lang || "en"; };
+
+  /* ---------- 1) Language by visitor's country (first visit only) ---------- */
+  (function () {
+    var LANG_BY_COUNTRY = { TR: "tr", AZ: "az", IR: "fa" };
+    var LANG_BY_TZ = { "Europe/Istanbul": "tr", "Asia/Istanbul": "tr", "Asia/Baku": "az", "Asia/Tehran": "fa" };
+    if (new URLSearchParams(location.search).get("lang")) return;        // explicit ?lang= wins
+    var stored = null; try { stored = localStorage.getItem("lang"); } catch (e) {}
+    if (stored) return;                                                   // the visitor already chose a language
+    var userClicked = false;
+    document.querySelectorAll(".langs button").forEach(function (b) { b.addEventListener("click", function (e) { if (e.isTrusted) userClicked = true; }); });
+
+    function apply(lang) {
+      if (userClicked || !lang || lang === curLang()) return;
+      var btn = document.querySelector('.langs button[data-lang="' + lang + '"]');
+      if (!btn) return;
+      btn.click();
+      try { localStorage.removeItem("lang"); } catch (e) {}              // don't lock it in: detect again next visit
+    }
+    function get(url, pick, ms) {
+      var c = new AbortController(); var t = setTimeout(function () { c.abort(); }, ms || 2500);
+      return fetch(url, { signal: c.signal, cache: "no-store" }).then(function (r) { return r.json(); })
+        .then(function (j) { clearTimeout(t); var cc = pick(j); if (!cc) throw 0; return String(cc).toUpperCase(); });
+    }
+    var tzLang = null;
+    try { tzLang = LANG_BY_TZ[Intl.DateTimeFormat().resolvedOptions().timeZone] || null; } catch (e) {}
+    get("https://api.country.is/", function (j) { return j.country; })
+      .catch(function () { return get("https://get.geojs.io/v1/ip/country.json", function (j) { return j.country; }); })
+      .catch(function () { return get("https://ipwho.is/?fields=country_code", function (j) { return j.country_code; }); })
+      .then(function (cc) { apply(LANG_BY_COUNTRY[cc] || "en"); })
+      .catch(function () { apply(tzLang); });                            // no network answer: use the device time zone
+  })();
+
+  /* ---------- 2) Mobile: closable list sheet ---------- */
+  (function () {
+    var close = function () { sidebar.classList.remove("open"); var s = $("#search"); if (s) s.blur(); };
+    $("#sheet-close").addEventListener("click", close);
+    // tap on the visible map closes the sheet
+    $(".map-wrap").addEventListener("pointerdown", function (e) {
+      if (sidebar.classList.contains("open") && !e.target.closest("#toggle-list")) close();
+    }, true);
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
+    // the keyboard's "search" key hides the keyboard so the results are visible
+    $("#search").addEventListener("keydown", function (e) { if (e.key === "Enter" && window.innerWidth <= 760) e.target.blur(); });
+    // keep the sheet above the on-screen keyboard
+    var setVvh = function () { var h = window.visualViewport ? window.visualViewport.height : window.innerHeight; document.documentElement.style.setProperty("--vvh", h + "px"); };
+    setVvh();
+    if (window.visualViewport) window.visualViewport.addEventListener("resize", setVvh);
+    window.addEventListener("resize", setVvh);
+  })();
+
+  /* ---------- 3) Auto-translate descriptions that are not in the site language ---------- */
+  (function () {
+    var NOTE = { en: "Machine-translated", tr: "Otomatik çeviri", az: "Avtomatik tərcümə", fa: "ترجمهٔ خودکار" };
+    var SHOW_ORIG = { en: "Original", tr: "Orijinal", az: "Orijinal", fa: "متن اصلی" };
+    var WORDS = {
+      en: ["the","and","of","was","is","to","in","by","from","its","were","which","after","renamed","name","called","village","town","city","officially","locals","still"],
+      tr: ["ve","ile","olarak","için","yapıldı","edildi","değiştirildi","oldu","değil","hâlâ","şimdi","yerel","resmî","resmen","şehir","köy","adını","adıyla","sonra","eski","halk","yerine"],
+      az: ["və","ilə","kimi","üçün","edilib","olub","adlanır","adlandırılıb","dəyişdirilib","deyil","hələ","indi","yerli","rəsmi","şəhər","kənd","adını","sonra","köhnə","xalq","əvəzinə"]
+    };
+    var cache = {};
+    try { cache = JSON.parse(sessionStorage.getItem("mtCache") || "{}"); } catch (e) {}
+    var save = function () { try { sessionStorage.setItem("mtCache", JSON.stringify(cache)); } catch (e) {} };
+
+    function guess(text) {
+      var ar = (text.match(/[؀-ۿ]/g) || []).length, lat = (text.match(/[A-Za-zÀ-žəƏ]/g) || []).length;
+      if (ar > lat) return "fa";
+      var w = text.toLocaleLowerCase("tr").replace(/[^\p{L}\s]/gu, " ").split(/\s+/);
+      var best = null, bestN = 0, second = 0;
+      Object.keys(WORDS).forEach(function (l) {
+        var n = 0; w.forEach(function (x) { if (WORDS[l].indexOf(x) > -1) n++; });
+        if (n > bestN) { second = bestN; bestN = n; best = l; } else if (n > second) second = n;
+      });
+      if (bestN >= 1 && bestN > second) return best;
+      // no clear function words: fall back to letters (ə only in Azerbaijani, ı/ş/ğ in Turkish)
+      if (/[əƏ]/.test(text)) return "az";
+      if (/[ıİşŞğĞ]/.test(text)) return "tr";
+      return null;                                                         // not sure -> let the translator detect
+    }
+
+    function google(text, tl) {
+      var url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=" + tl + "&dt=t&q=" + encodeURIComponent(text);
+      return fetch(url).then(function (r) { if (!r.ok) throw 0; return r.json(); }).then(function (j) {
+        var out = (j[0] || []).map(function (s) { return s[0]; }).join("");
+        return { text: out, from: j[2] };
+      });
+    }
+    function mymemory(text, from, tl) {
+      var url = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(text.slice(0, 480)) + "&langpair=" + (from || "en") + "|" + tl;
+      return fetch(url).then(function (r) { return r.json(); }).then(function (j) {
+        if (!j || !j.responseData || j.responseStatus != 200) throw 0;
+        return { text: j.responseData.translatedText, from: from };
+      });
+    }
+    function translate(text, tl) {
+      var key = tl + "|" + text;
+      if (cache[key] !== undefined) return Promise.resolve(cache[key]);
+      var g = guess(text);
+      if (g === tl) return Promise.resolve(null);
+      return google(text, tl)
+        .catch(function () { return mymemory(text, g, tl); })
+        .then(function (r) {
+          var res = (!r || !r.text || r.from === tl || r.text.trim() === text.trim()) ? null : r.text;
+          cache[key] = res; save(); return res;
+        })
+        .catch(function () { return null; });
+    }
+
+    // small queue so a long list does not fire dozens of requests at once
+    var queue = [], running = 0;
+    function pump() {
+      while (running < 3 && queue.length) {
+        var job = queue.shift(); running++;
+        job().then(function () { running--; pump(); });
+      }
+    }
+
+    function handle(el) {
+      if (el.dataset.mtDone) return;
+      el.dataset.mtDone = "1";
+      var text = el.textContent.trim(), tl = curLang();
+      if (text.length < 8) return;
+      if (guess(text) === tl) return;                                      // already in the right language
+      queue.push(function () {
+        return translate(text, tl).then(function (res) {
+          if (!res || !el.isConnected || curLang() !== tl) return;
+          el.textContent = res;
+          var n = document.createElement("span");
+          n.className = "mt-note"; n.textContent = NOTE[tl] || NOTE.en;
+          n.title = (SHOW_ORIG[tl] || "Original") + ": " + text;
+          el.appendChild(n);
+        });
+      });
+      pump();
+    }
+
+    var SEL = ".pop p, .item .desc";
+    function scan(root) {
+      if (!root.querySelectorAll) return;
+      if (root.matches && root.matches(SEL)) handle(root);
+      root.querySelectorAll(SEL).forEach(handle);
+    }
+    new MutationObserver(function (muts) {
+      muts.forEach(function (m) { m.addedNodes.forEach(function (n) { if (n.nodeType === 1) scan(n); }); });
+    }).observe(document.body, { childList: true, subtree: true });
+    scan(document.body);
+  })();
+})();
+</script>
 </body>
 </html>
