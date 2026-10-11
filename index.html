@@ -30,6 +30,10 @@
 .mt-box{margin:-2px 0 8px;padding:7px 10px;border-inline-start:3px solid var(--blue);background:#f2f9fc;border-radius:0 6px 6px 0}
 .mt-box .mt-label{font-size:.7rem;font-weight:700;color:var(--muted);margin-bottom:2px}
 .mt-box .mt-text{font-size:.86rem;line-height:1.45;color:var(--ink)}
+/* ===== info popup: fits the screen, content scrolls with a finger ===== */
+.leaflet-container .leaflet-popup-content{min-width:0;max-width:min(320px, calc(100vw - 72px));overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
+.leaflet-container .leaflet-popup-content-wrapper{max-width:calc(100vw - 40px)}
+.leaflet-container .leaflet-popup-scrolled{border-top:0;border-bottom:0}
 </style>
 </head>
 <body>
@@ -109,6 +113,20 @@
 </dialog>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+/* Popup defaults (set before app.js creates any popup):
+   limited height so long content scrolls inside it, and kept clear of the map buttons on phones */
+(function () {
+  if (!window.L || !L.Popup) return;
+  var w = window.innerWidth, h = window.innerHeight, small = w <= 760;
+  L.Popup.mergeOptions({
+    maxHeight: Math.round(small ? Math.min(h * 0.5, h - 330) : h * 0.7),
+    autoPanPaddingTopLeft: L.point(small ? 8 : 12, small ? 84 : 12),
+    autoPanPaddingBottomRight: L.point(small ? 8 : 12, small ? 90 : 24),
+    keepInView: true
+  });
+})();
+</script>
 <script src="config.js"></script>
 <script src="data/places.js"></script>
 <script src="assets/i18n.js"></script>
