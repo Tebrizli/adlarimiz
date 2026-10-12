@@ -6,9 +6,14 @@
 <title>Adlarımız — Erased Place Names of South Azerbaijan</title>
 <meta name="description" content="Community map of Turkic place names in South Azerbaijan (north-west Iran) replaced with Persian names over the last century. Explore, search and suggest renamed places — in English, Turkish, Azerbaijani Turkish and Persian.">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://tebrizli.github.io/adlarimiz/">
+<meta property="og:site_name" content="Adlarımız">
+<link rel="canonical" href="https://tebrizli.github.io/adlarimiz/">
 <meta property="og:title" content="Adlarımız — Erased Turkic place names of South Azerbaijan">
 <meta property="og:description" content="Towns, rivers and mountains of South Azerbaijan renamed from Turkish to Persian — on one map, with history and sources. Help document them.">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Adlarımız — Erased Turkic place names of South Azerbaijan">
+<meta name="twitter:description" content="Towns, rivers and mountains of South Azerbaijan renamed from Turkish to Persian — on one map, with history and sources.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%23c8102e' d='M16 2c-5.5 0-10 4.3-10 9.7C6 19 16 30 16 30s10-11 10-18.3C26 6.3 21.5 2 16 2z'/%3E%3Ccircle cx='16' cy='12' r='4' fill='%23fff'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -34,6 +39,26 @@
 .leaflet-container .leaflet-popup-content{min-width:0;max-width:min(320px, calc(100vw - 72px));overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y}
 .leaflet-container .leaflet-popup-content-wrapper{max-width:calc(100vw - 40px)}
 .leaflet-container .leaflet-popup-scrolled{border-top:0;border-bottom:0}
+/* ===== sharing ===== */
+.share-site{display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px solid #2b4c7e;color:#cfe3f7;border-radius:8px;padding:6px 10px;cursor:pointer;font:inherit}
+.share-site:hover{background:var(--navy-2);color:#fff}
+@media (max-width:760px){ .share-site span{display:none} .share-site{padding:7px 9px} }
+.pop .share-btn{margin-top:10px;width:100%;background:var(--red);color:#fff;border:1px solid var(--red);padding:6px 10px;font-size:.85rem}
+.pop .share-btn + .fix-btn{margin-top:6px}
+#share-dlg{border:0;border-radius:14px;padding:0;width:min(440px,94vw);box-shadow:0 20px 60px rgba(0,0,0,.3)}
+#share-dlg::backdrop{background:rgba(11,37,69,.45)}
+#share-dlg .sh-wrap{padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+#share-dlg .sh-head{display:flex;align-items:center;gap:10px}
+#share-dlg .sh-title{margin:0;flex:1;color:var(--navy);font-size:1.1rem}
+#share-dlg .sh-x{border:1px solid var(--line);background:#fff;border-radius:50%;width:34px;height:34px;cursor:pointer;font-size:1rem}
+#share-dlg .sh-preview{margin:0;font-size:.85rem;color:var(--muted);white-space:pre-line;max-height:7.5em;overflow:auto;background:var(--bg);border-radius:8px;padding:8px 10px}
+#share-dlg .sh-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+#share-dlg .sh-net{display:flex;align-items:center;justify-content:center;min-height:42px;border-radius:10px;color:#fff;font-weight:700;font-size:.82rem;text-decoration:none;text-align:center;padding:4px}
+#share-dlg .sh-net:hover{filter:brightness(1.1)}
+#share-dlg .sh-copy{display:flex;gap:8px}
+#share-dlg .sh-url{flex:1;min-width:0;font:inherit;font-size:.82rem;padding:8px 10px;border:1px solid var(--line);border-radius:8px;direction:ltr}
+#share-dlg .sh-native{width:100%}
+@media (max-width:420px){ #share-dlg .sh-grid{grid-template-columns:repeat(2,1fr)} }
 </style>
 </head>
 <body>
@@ -55,6 +80,7 @@
     <button data-lang="az">AZ</button>
     <button data-lang="fa">فا</button>
   </div>
+  <button type="button" id="share-site" class="share-site"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M18 16a3 3 0 0 0-2.4 1.2l-6.7-3.4a3 3 0 0 0 0-1.6l6.7-3.4A3 3 0 1 0 15 7l-6.7 3.4a3 3 0 1 0 0 3.2L15 17a3 3 0 1 0 3-1z"/></svg><span></span></button>
 </header>
 
 <main id="view-map" class="view">
@@ -125,6 +151,23 @@
     autoPanPaddingBottomRight: L.point(small ? 8 : 12, small ? 90 : 24),
     keepInView: true
   });
+  // let index.html add its own buttons to a popup BEFORE Leaflet measures and positions it
+  window.__popupHooks = [];
+  var origUpdate = L.Popup.prototype._updateContent;
+  L.Popup.prototype._updateContent = function () {
+    origUpdate.apply(this, arguments);
+    var n = this._contentNode;
+    if (!n) return;
+    n.__popup = this;
+    var pop = n.querySelector(".pop");
+    if (pop) window.__popupHooks.forEach(function (f) { try { f(pop); } catch (e) {} });
+  };
+  // re-fit a popup whose content grew later (e.g. a translation arrived)
+  window.__refitPopup = function (el) {
+    var n = el && el.closest && el.closest(".leaflet-popup-content"), lp = n && n.__popup;
+    if (!lp || !lp._map) return;
+    try { lp._updateLayout(); lp._updatePosition(); lp._adjustPan(); } catch (e) {}
+  };
 })();
 </script>
 <script src="config.js"></script>
@@ -141,6 +184,15 @@
     var manual = sessionStorage.getItem("langManual");
     var geo = localStorage.getItem("geoLang");
     if (!q) localStorage.setItem("lang", manual || geo || "en");
+  } catch (e) {}
+  // shared links use ?place=ID (survives every social network); app.js opens #place=ID
+  try {
+    var sp = new URLSearchParams(location.search), pl = sp.get("place");
+    if (pl && !/place=/.test(location.hash)) {
+      sp.delete("place");
+      var qs = sp.toString();
+      history.replaceState(null, "", location.pathname + (qs ? "?" + qs : "") + "#place=" + encodeURIComponent(pl));
+    }
   } catch (e) {}
 })();
 </script>
@@ -198,7 +250,7 @@
       log("lang: " + why + " -> " + lang);
       if (userClicked || lang === curLang()) return;
       var btn = document.querySelector('.langs button[data-lang="' + lang + '"]');
-      if (btn) btn.click();
+      if (btn) { btn.click(); setTimeout(function () { if (window.__adlarimizReopen) window.__adlarimizReopen(); }, 150); }
     }
     var PROVIDERS = [
       ["country.is", "https://api.country.is/", function (j) { return j.country; }],
@@ -323,10 +375,12 @@
       box.querySelector(".mt-text").textContent = LOADING[tl] || LOADING.en;
       p.insertAdjacentElement("afterend", box);
       p.setAttribute("dir", "auto");
+      setTimeout(function () { if (window.__refitPopup) window.__refitPopup(box); }, 0);
       translate(text, tl).then(function (res) {
         if (!box.isConnected) return;
-        if (!res) { box.remove(); return; }                                // same language or no service answered
+        if (!res) { var parent = box.parentNode; box.remove(); if (window.__refitPopup) window.__refitPopup(parent); return; }
         box.querySelector(".mt-text").textContent = res;
+        if (window.__refitPopup) window.__refitPopup(box);
       });
     }
 
@@ -339,6 +393,145 @@
       muts.forEach(function (m) { m.addedNodes.forEach(function (n) { if (n.nodeType === 1) scan(n); }); });
     }).observe(document.body, { childList: true, subtree: true });
   })();
+
+  /* ---------- 4) Sharing: places and the whole site ---------- */
+  (function () {
+    var SITE = "https://tebrizli.github.io/adlarimiz/";
+    var S = {
+      en: { share: "Share", shareSite: "Share the site", shareTitle: "Share", copy: "Copy link", copied: "Link copied ✓", more: "More…", close: "Close",
+            place: function (o, f) { return o + " → " + f + ": an erased Turkic place name of South Azerbaijan"; },
+            site: "Adlarımız — the Turkic place names of South Azerbaijan that were replaced with Persian names. Explore the map and help document them.",
+            tags: ["Adlarımız", "SouthAzerbaijan"] },
+      tr: { share: "Paylaş", shareSite: "Siteyi paylaş", shareTitle: "Paylaş", copy: "Bağlantıyı kopyala", copied: "Bağlantı kopyalandı ✓", more: "Diğer…", close: "Kapat",
+            place: function (o, f) { return o + " → " + f + ": Güney Azerbaycan'da silinen bir Türkçe yer adı"; },
+            site: "Adlarımız — Güney Azerbaycan'da Farsça adlarla değiştirilen Türkçe yer adları haritası. Keşfedin ve belgelemeye katkı verin.",
+            tags: ["Adlarımız", "GüneyAzerbaycan"] },
+      az: { share: "Paylaş", shareSite: "Saytı paylaş", shareTitle: "Paylaş", copy: "Keçidi kopyala", copied: "Keçid kopyalandı ✓", more: "Digər…", close: "Bağla",
+            place: function (o, f) { return o + " → " + f + ": Güney Azərbaycanda silinən türk yer adı"; },
+            site: "Adlarımız — Güney Azərbaycanda fars adları ilə əvəz edilən türk yer adlarının xəritəsi. Kəşf edin və sənədləşdirməyə qoşulun.",
+            tags: ["Adlarımız", "GüneyAzərbaycan"] },
+      fa: { share: "اشتراک‌گذاری", shareSite: "اشتراک سایت", shareTitle: "اشتراک‌گذاری", copy: "کپی پیوند", copied: "پیوند کپی شد ✓", more: "بیشتر…", close: "بستن",
+            place: function (o, f) { return o + " ← " + f + ": نام ترکیِ تغییر داده شده در آذربایجان جنوبی"; },
+            site: "آدلاریمیز — نقشهٔ نام‌های ترکی آذربایجان جنوبی که با نام‌های فارسی جایگزین شده‌اند. نقشه را ببینید و در مستندسازی سهیم شوید.",
+            tags: ["آدلاریمیز", "آذربایجان_جنوبی"] }
+    };
+    var s = function () { return S[curLang()] || S.en; };
+    var enc = encodeURIComponent;
+
+    var NETWORKS = [
+      ["WhatsApp", "#25D366", function (d) { return "https://wa.me/?text=" + enc(d.text + "\n" + d.url); }],
+      ["Telegram", "#229ED9", function (d) { return "https://t.me/share/url?url=" + enc(d.url) + "&text=" + enc(d.text); }],
+      ["X", "#111111", function (d) { return "https://twitter.com/intent/tweet?text=" + enc(d.short) + "&url=" + enc(d.url) + "&hashtags=" + enc(d.tags.join(",")); }],
+      ["Facebook", "#1877F2", function (d) { return "https://www.facebook.com/sharer/sharer.php?u=" + enc(d.url); }],
+      ["LinkedIn", "#0A66C2", function (d) { return "https://www.linkedin.com/sharing/share-offsite/?url=" + enc(d.url); }],
+      ["Reddit", "#FF4500", function (d) { return "https://www.reddit.com/submit?url=" + enc(d.url) + "&title=" + enc(d.title); }],
+      ["VK", "#0077FF", function (d) { return "https://vk.com/share.php?url=" + enc(d.url) + "&title=" + enc(d.title); }],
+      ["E-mail", "#6B7785", function (d) { return "mailto:?subject=" + enc(d.title) + "&body=" + enc(d.text + "\n\n" + d.url); }]
+    ];
+
+    // ---- dialog ----
+    var dlg = document.createElement("dialog");
+    dlg.id = "share-dlg";
+    dlg.innerHTML = '<div class="sh-wrap"><div class="sh-head"><h3 class="sh-title"></h3><button type="button" class="sh-x" aria-label="Close">✕</button></div>' +
+      '<p class="sh-preview"></p><div class="sh-grid"></div>' +
+      '<div class="sh-copy"><input class="sh-url" readonly><button type="button" class="btn primary sh-copybtn"></button></div>' +
+      '<button type="button" class="btn ghost sh-native" hidden></button></div>';
+    document.body.appendChild(dlg);
+    var current = null;
+    dlg.querySelector(".sh-x").onclick = function () { dlg.close(); };
+    dlg.addEventListener("click", function (e) { if (e.target === dlg) dlg.close(); });
+
+    function openShare(d) {
+      current = d;
+      var t = s();
+      dlg.setAttribute("dir", curLang() === "fa" ? "rtl" : "ltr");
+      dlg.querySelector(".sh-title").textContent = d.heading || t.shareTitle;
+      dlg.querySelector(".sh-preview").textContent = d.text;
+      dlg.querySelector(".sh-url").value = d.url;
+      dlg.querySelector(".sh-copybtn").textContent = t.copy;
+      var grid = dlg.querySelector(".sh-grid"); grid.innerHTML = "";
+      NETWORKS.forEach(function (n) {
+        var a = document.createElement("a");
+        a.className = "sh-net"; a.textContent = n[0]; a.style.background = n[1];
+        a.href = n[2](d); a.target = "_blank"; a.rel = "noopener noreferrer";
+        grid.appendChild(a);
+      });
+      var nat = dlg.querySelector(".sh-native");
+      nat.hidden = !navigator.share; nat.textContent = "↗ " + t.more;
+      if (!dlg.open) dlg.showModal();
+    }
+    dlg.querySelector(".sh-copybtn").onclick = function () {
+      var b = this, url = current.url, done = function () { b.textContent = s().copied; setTimeout(function () { b.textContent = s().copy; }, 1800); };
+      if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(url).then(done, fallback); else fallback();
+      function fallback() { var i = dlg.querySelector(".sh-url"); i.select(); try { document.execCommand("copy"); done(); } catch (e) {} }
+    };
+    dlg.querySelector(".sh-native").onclick = function () {
+      navigator.share({ title: current.title, text: current.text, url: current.url }).catch(function () {});
+    };
+
+    // ---- data for a place (read from its popup) ----
+    function placeData(pop) {
+      var fix = pop.querySelector("[data-fix]"); if (!fix) return null;
+      var id = fix.getAttribute("data-fix");
+      var orig = (pop.querySelector("h4") || {}).textContent || "";
+      var faEl = pop.querySelector(".fa"); var fa = faEl ? faEl.textContent.trim() : "";
+      var pEl = pop.querySelector(":scope > p"); var desc = pEl ? pEl.textContent.trim() : "";
+      var t = s(), title = t.place(orig.trim(), fa);
+      if (desc.length > 220) desc = desc.slice(0, 217).replace(/\s+\S*$/, "") + "…";
+      var url = SITE + "?place=" + enc(id);
+      return { title: title, text: title + (desc ? "\n" + desc : ""), short: title, url: url, tags: t.tags, heading: orig.trim() };
+    }
+    function siteData() {
+      var t = s();
+      return { title: document.title, text: t.site, short: t.site, url: SITE, tags: t.tags, heading: t.shareSite };
+    }
+
+    // ---- "Share" button in every place popup ----
+    function addToPopup(pop) {
+      if (pop.querySelector(".share-btn")) return;
+      var fix = pop.querySelector(".fix-btn"); if (!fix) return;
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "btn share-btn"; b.textContent = "↗ " + s().share;
+      b.onclick = function (e) { e.stopPropagation(); var d = placeData(pop); if (d) openShare(d); };
+      fix.insertAdjacentElement("beforebegin", b);
+    }
+    if (window.__popupHooks) window.__popupHooks.push(addToPopup);
+    new MutationObserver(function (muts) {
+      muts.forEach(function (m) { m.addedNodes.forEach(function (n) {
+        if (n.nodeType !== 1) return;
+        if (n.matches && n.matches(".pop")) addToPopup(n);
+        if (n.querySelectorAll) n.querySelectorAll(".pop").forEach(addToPopup);
+      }); });
+    }).observe(document.body, { childList: true, subtree: true });
+
+    // ---- "Share the site" button in the header ----
+    var hb = document.getElementById("share-site");
+    var label = function () { hb.title = s().shareSite; hb.setAttribute("aria-label", s().shareSite); hb.querySelector("span").textContent = s().share; };
+    hb.onclick = function () { openShare(siteData()); };
+    label();
+    new MutationObserver(label).observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });
+
+    // ---- keep the shared place open: reopen its popup after a language change ----
+    function reopen(tries) {
+      var m = /place=([^&]+)/.exec(location.hash); if (!m) return;
+      tries = tries || 0;
+      // the old popup fades out first; wait for it to disappear
+      if (document.querySelector(".leaflet-popup")) { if (tries < 15) setTimeout(function () { reopen(tries + 1); }, 100); return; }
+      var id = decodeURIComponent(m[1]);
+      var item = document.querySelector('.item[data-id="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"]');
+      if (item) item.click();
+    }
+    window.__adlarimizReopen = reopen;
+    document.querySelectorAll(".langs button").forEach(function (b) {
+      b.addEventListener("pointerdown", function () { b._hadPopup = !!document.querySelector(".leaflet-popup"); }, true);
+      b.addEventListener("click", function (e) { if (b._hadPopup || !e.isTrusted) setTimeout(reopen, 120); b._hadPopup = false; });
+    });
+    // forget the place in the address when its popup is closed
+    document.addEventListener("click", function (e) {
+      if (e.target.closest(".leaflet-popup-close-button")) history.replaceState(null, "", location.pathname + location.search.replace(/([?&])place=[^&]*&?/, "$1").replace(/[?&]$/, ""));
+    });
+  })();
+
 })();
 </script>
 </body>
