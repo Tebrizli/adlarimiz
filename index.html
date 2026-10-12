@@ -59,6 +59,21 @@
 #share-dlg .sh-url{flex:1;min-width:0;font:inherit;font-size:.82rem;padding:8px 10px;border:1px solid var(--line);border-radius:8px;direction:ltr}
 #share-dlg .sh-native{width:100%}
 @media (max-width:420px){ #share-dlg .sh-grid{grid-template-columns:repeat(2,1fr)} }
+#share-dlg .sh-ig{border:0;cursor:pointer;font:inherit;font-weight:700;font-size:.82rem;background:linear-gradient(45deg,#f9a825,#e1306c 45%,#833ab4)}
+#story-dlg{border:0;border-radius:14px;padding:0;width:min(420px,94vw);max-height:94vh;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+#story-dlg::backdrop{background:rgba(11,37,69,.55)}
+#story-dlg .st-wrap{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+#story-dlg .sh-head{display:flex;align-items:center;gap:10px}
+#story-dlg .sh-title{margin:0;flex:1;color:var(--navy);font-size:1.1rem}
+#story-dlg .sh-x{border:1px solid var(--line);background:#fff;border-radius:50%;width:34px;height:34px;cursor:pointer}
+#story-dlg .st-prev{display:flex;align-items:center;justify-content:center;background:#0b2545;border-radius:12px;aspect-ratio:9/16;max-height:58vh;margin:0 auto;width:auto;height:58vh;overflow:hidden}
+#story-dlg .st-prev img{height:100%;width:auto;display:block}
+#story-dlg .st-wait{color:#cfe3f7;font-size:.9rem;padding:20px;text-align:center}
+#story-dlg .st-hint{margin:0;font-size:.82rem;color:var(--muted);text-align:center}
+#story-dlg .st-btns{display:flex;gap:8px}
+#story-dlg .st-btns .btn{flex:1}
+#story-dlg .st-share{background:linear-gradient(45deg,#f9a825,#e1306c 45%,#833ab4);color:#fff;border:0}
+#story-dlg .btn:disabled{opacity:.5}
 </style>
 </head>
 <body>
@@ -456,6 +471,12 @@
         a.href = n[2](d); a.target = "_blank"; a.rel = "noopener noreferrer";
         grid.appendChild(a);
       });
+      if (d.story) {
+        var igb = document.createElement("button");
+        igb.type = "button"; igb.className = "sh-net sh-ig"; igb.textContent = ig().btn;
+        igb.onclick = function () { openStory(d); };
+        grid.insertBefore(igb, grid.firstChild);
+      }
       var nat = dlg.querySelector(".sh-native");
       nat.hidden = !navigator.share; nat.textContent = "↗ " + t.more;
       if (!dlg.open) dlg.showModal();
@@ -469,6 +490,215 @@
       navigator.share({ title: current.title, text: current.text, url: current.url }).catch(function () {});
     };
 
+
+    // ================= Instagram story image =================
+    var IG = {
+      en: { btn: "Instagram Story", make: "Preparing the image…", share: "Share to Instagram", dl: "Download image", hintShare: "Choose Instagram → Story. The link has been copied: add it with the “Link” sticker.", hintDl: "Image downloaded. Open Instagram → Story, pick the image and add the copied link with the “Link” sticker.", sub: "Erased Turkic place names of South Azerbaijan", cta: "Learn more:" },
+      tr: { btn: "Instagram Hikâyesi", make: "Görsel hazırlanıyor…", share: "Instagram'da paylaş", dl: "Görseli indir", hintShare: "Instagram → Hikâye'yi seçin. Bağlantı kopyalandı: “Bağlantı” çıkartmasıyla ekleyin.", hintDl: "Görsel indirildi. Instagram → Hikâye'yi açın, görseli seçin ve kopyalanan bağlantıyı “Bağlantı” çıkartmasıyla ekleyin.", sub: "Güney Azerbaycan'ın silinen Türkçe yer adları", cta: "Daha fazlası:" },
+      az: { btn: "Instagram Hekayəsi", make: "Şəkil hazırlanır…", share: "Instagram-da paylaş", dl: "Şəkli yüklə", hintShare: "Instagram → Hekayə seçin. Keçid kopyalandı: “Keçid” stikeri ilə əlavə edin.", hintDl: "Şəkil yükləndi. Instagram → Hekayə açın, şəkli seçin və kopyalanan keçidi “Keçid” stikeri ilə əlavə edin.", sub: "Güney Azərbaycanın silinən türk yer adları", cta: "Ətraflı:" },
+      fa: { btn: "استوری اینستاگرام", make: "در حال آماده‌سازی تصویر…", share: "اشتراک در اینستاگرام", dl: "دانلود تصویر", hintShare: "اینستاگرام ← استوری را انتخاب کنید. پیوند کپی شد: با استیکر «لینک» اضافه کنید.", hintDl: "تصویر دانلود شد. اینستاگرام ← استوری را باز کنید، تصویر را انتخاب و پیوند کپی‌شده را با استیکر «لینک» اضافه کنید.", sub: "نام‌های ترکی تغییر داده شده در آذربایجان جنوبی", cta: "بیشتر بخوانید:" }
+    };
+    var ig = function () { return IG[curLang()] || IG.en; };
+    var isAr = function (t) { return /[؀-ۿ]/.test(t || ""); };
+
+    function loadImg(src) {
+      return new Promise(function (res) {
+        var im = new Image(); im.crossOrigin = "anonymous";
+        var t = setTimeout(function () { res(null); }, 5000);
+        im.onload = function () { clearTimeout(t); res(im); };
+        im.onerror = function () { clearTimeout(t); res(null); };
+        im.src = src;
+      });
+    }
+    // map background around the place (Esri tiles, CORS-enabled); skipped silently if they fail
+    function drawMap(ctx, W, H, lat, lng) {
+      if (!isFinite(lat) || !isFinite(lng)) return Promise.resolve(false);
+      var z = 10, S2 = 512, n = Math.pow(2, z);
+      var wx = (lng + 180) / 360 * n * S2;
+      var r = lat * Math.PI / 180, wy = (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * n * S2;
+      var x0 = wx - W / 2, y0 = wy - H * 0.42;
+      var jobs = [];
+      for (var tx = Math.floor(x0 / S2); tx <= Math.floor((x0 + W) / S2); tx++) {
+        for (var ty = Math.floor(y0 / S2); ty <= Math.floor((y0 + H) / S2); ty++) {
+          (function (tx, ty) {
+            jobs.push(loadImg("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/" + z + "/" + ty + "/" + tx)
+              .then(function (im) { if (im) ctx.drawImage(im, tx * S2 - x0, ty * S2 - y0, S2, S2); return !!im; }));
+          })(tx, ty);
+        }
+      }
+      return Promise.all(jobs).then(function (ok) { return ok.some(Boolean); });
+    }
+    function wrap(ctx, text, maxW) {
+      var words = String(text).split(/\s+/), lines = [], line = "";
+      words.forEach(function (w) {
+        var test = line ? line + " " + w : w;
+        if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = w; } else line = test;
+      });
+      if (line) lines.push(line);
+      return lines;
+    }
+    function fitFont(ctx, text, weight, family, start, maxW, min) {
+      var size = start;
+      do { ctx.font = weight + " " + size + "px " + family; size -= 4; } while (ctx.measureText(text).width > maxW && size > min);
+      return size + 4;
+    }
+
+    function makeStory(info) {
+      var W = 1080, H = 1920, c = document.createElement("canvas"); c.width = W; c.height = H;
+      var ctx = c.getContext("2d"), L = curLang(), rtl = L === "fa";
+      var LAT = '"Noto Sans", system-ui, sans-serif', FA = 'Vazirmatn, "Noto Sans", sans-serif';
+      var fontFor = function (t) { return isAr(t) ? FA : (rtl ? FA : LAT); };
+      var fontsReady = (document.fonts && document.fonts.load) ? Promise.all([
+        document.fonts.load('700 100px "Noto Sans"'), document.fonts.load('400 40px "Noto Sans"'),
+        document.fonts.load('700 100px Vazirmatn'), document.fonts.load('400 40px Vazirmatn')]).catch(function () {}) : Promise.resolve();
+      ctx.fillStyle = "#0b2545"; ctx.fillRect(0, 0, W, H);
+      return fontsReady.then(function () { return drawMap(ctx, W, H, info.lat, info.lng); }).then(function (hasMap) {
+        // darken the map
+        var g = ctx.createLinearGradient(0, 0, 0, H);
+        g.addColorStop(0, hasMap ? "rgba(11,37,69,.92)" : "#0b2545");
+        g.addColorStop(0.42, hasMap ? "rgba(11,37,69,.55)" : "#13315c");
+        g.addColorStop(1, hasMap ? "rgba(11,37,69,.95)" : "#0b2545");
+        ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+        var X = rtl ? W - 90 : 90, align = rtl ? "right" : "left", maxW = W - 180;
+        var text = function (t, y, font, color) { ctx.direction = isAr(t) || rtl ? "rtl" : "ltr"; ctx.textAlign = align; ctx.font = font; ctx.fillStyle = color; ctx.fillText(t, X, y); };
+
+        // header
+        ctx.save(); ctx.translate(rtl ? W - 120 : 120, 150);
+        ctx.fillStyle = "#c8102e"; ctx.beginPath(); ctx.arc(0, -10, 30, Math.PI, 0); ctx.lineTo(0, 45); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(0, -10, 11, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+        ctx.direction = rtl ? "rtl" : "ltr"; ctx.textAlign = align;
+        ctx.font = "700 54px " + (rtl ? FA : LAT); ctx.fillStyle = "#fff"; ctx.fillText(rtl ? "آدلاریمیز" : "Adlarımız", rtl ? W - 180 : 180, 150);
+        ctx.font = "400 30px " + (rtl ? FA : LAT); ctx.fillStyle = "#cfe3f7"; ctx.fillText(ig().sub, rtl ? W - 180 : 180, 196);
+
+        // pin where the place is (map centre)
+        if (hasMap) {
+          var px = W / 2, py = H * 0.42;
+          ctx.fillStyle = "rgba(200,16,46,.25)"; ctx.beginPath(); ctx.arc(px, py, 70, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = "#c8102e"; ctx.beginPath(); ctx.arc(px, py - 40, 34, Math.PI, 0); ctx.lineTo(px, py + 10); ctx.closePath(); ctx.fill();
+          ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(px, py - 40, 12, 0, Math.PI * 2); ctx.fill();
+        }
+
+        // card: lay out once without drawing to know its height, then draw card + text
+        var cardTop = 880, cardMaxBottom = 1730;
+        function body(draw) {
+          var tx = function (t, y, font, color) { if (draw) text(t, y, font, color); };
+          var y = cardTop + 100;
+          tx(info.lblOrig, y, "600 34px " + fontFor(info.lblOrig), "#5d6b7a");
+          y += 110;
+          var big = fitFont(ctx, info.orig, "800", fontFor(info.orig), 120, maxW - 40, 56);
+          tx(info.orig, y, "800 " + big + "px " + fontFor(info.orig), "#0b2545");
+          if (info.arabic) { y += 80; tx(info.arabic, y, "600 56px " + FA, "#5d6b7a"); }
+          y += 95;
+          tx(info.lblNow, y, "600 32px " + fontFor(info.lblNow), "#5d6b7a");
+          y += 85;
+          if (draw) {
+            ctx.font = "700 72px " + FA; ctx.direction = "rtl"; ctx.textAlign = align; ctx.fillStyle = "#c8102e";
+            ctx.fillText(info.fa, X, y);
+            var fw = ctx.measureText(info.fa).width, sx = rtl ? X - fw : X;
+            ctx.fillRect(sx - 6, y - 24, fw + 12, 6);                      // strike-through the imposed name
+            if (info.faLatin) {
+              ctx.direction = "ltr"; ctx.textAlign = rtl ? "right" : "left"; ctx.font = "400 36px " + LAT; ctx.fillStyle = "#5d6b7a";
+              ctx.fillText(rtl ? info.faLatin + " · " : " · " + info.faLatin, rtl ? X - fw - 20 : X + fw + 20, y - 4);
+            }
+          }
+          if (info.meta) { y += 70; tx(info.meta, y, "500 32px " + fontFor(info.meta), "#5d6b7a"); }
+          if (info.desc) {
+            y += 75;
+            var df = fontFor(info.desc); ctx.font = "400 36px " + df; ctx.direction = isAr(info.desc) ? "rtl" : "ltr";
+            var lines = wrap(ctx, info.desc, maxW - 20);
+            var room = Math.max(1, Math.floor((cardMaxBottom - 60 - y) / 50) + 1);
+            if (lines.length > room) { lines = lines.slice(0, room); lines[room - 1] = lines[room - 1].replace(/\s*\S*$/, "") + " …"; }
+            lines.forEach(function (ln, i) { tx(ln, y + i * 50, "400 36px " + df, "#1b2430"); });
+            y += (lines.length - 1) * 50;
+          }
+          return y;
+        }
+        var endY = body(false), cardBottom = Math.min(cardMaxBottom, endY + 70);
+        ctx.fillStyle = "rgba(255,255,255,.97)";
+        ctx.beginPath();
+        if (ctx.roundRect) ctx.roundRect(60, cardTop, W - 120, cardBottom - cardTop, 36); else ctx.rect(60, cardTop, W - 120, cardBottom - cardTop);
+        ctx.fill();
+        body(true);
+        // footer
+        ctx.direction = rtl ? "rtl" : "ltr"; ctx.textAlign = "center";
+        ctx.font = "500 34px " + (rtl ? FA : LAT); ctx.fillStyle = "#cfe3f7"; ctx.fillText(ig().cta, W / 2, 1800);
+        ctx.direction = "ltr"; ctx.font = "700 42px " + LAT; ctx.fillStyle = "#fff"; ctx.fillText("tebrizli.github.io/adlarimiz", W / 2, 1858);
+        return new Promise(function (res) { c.toBlob(function (b) { res(b); }, "image/png"); });
+      });
+    }
+
+    function storyInfo(pop) {
+      var kvs = pop.querySelectorAll(".kv > div");
+      var lblNow = kvs[0] ? (kvs[0].querySelector(".k") || {}).textContent || "" : "";
+      var faLatin = kvs[0] ? (kvs[0].textContent.split("·")[1] || "").trim() : "";
+      var meta = [];
+      for (var i = 1; i < kvs.length && i < 3; i++) { var v = kvs[i].textContent.split(":").slice(1).join(":").trim(); if (v) meta.push(v); }
+      var g = pop.querySelector('.links a[href*="google.com/maps"]'), m = g && /query=([-\d.]+),([-\d.]+)/.exec(g.href);
+      var pEl = pop.querySelector(":scope > p");
+      return {
+        lblOrig: ((pop.querySelector(".k") || {}).textContent || "").trim(),
+        orig: ((pop.querySelector("h4") || {}).textContent || "").trim(),
+        arabic: ((pop.querySelector(".ar") || {}).textContent || "").trim(),
+        lblNow: lblNow.replace(/:\s*$/, "").trim(),
+        fa: ((pop.querySelector(".fa") || {}).textContent || "").trim(),
+        faLatin: faLatin, meta: meta.join(" · "),
+        desc: pEl ? pEl.textContent.trim() : "",
+        lat: m ? parseFloat(m[1]) : NaN, lng: m ? parseFloat(m[2]) : NaN
+      };
+    }
+
+    // story preview dialog
+    var sdlg = document.createElement("dialog");
+    sdlg.id = "story-dlg";
+    sdlg.innerHTML = '<div class="st-wrap"><div class="sh-head"><h3 class="sh-title"></h3><button type="button" class="sh-x" aria-label="Close">✕</button></div>' +
+      '<div class="st-prev"><span class="st-wait"></span><img alt=""></div><p class="st-hint"></p>' +
+      '<div class="st-btns"><button type="button" class="btn st-share"></button><button type="button" class="btn ghost st-dl"></button></div></div>';
+    document.body.appendChild(sdlg);
+    sdlg.querySelector(".sh-x").onclick = function () { sdlg.close(); };
+    sdlg.addEventListener("click", function (e) { if (e.target === sdlg) sdlg.close(); });
+    var storyFile = null, storyUrl = null;
+
+    function copyText(t) {
+      try { if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(t).catch(function () {}); } catch (e) {}
+      try { var i = document.createElement("textarea"); i.value = t; document.body.appendChild(i); i.select(); document.execCommand("copy"); i.remove(); } catch (e) {}
+    }
+    function openStory(d) {
+      copyText(d.url);                                                    // ready for Instagram's "Link" sticker
+      var T = ig();
+      sdlg.setAttribute("dir", curLang() === "fa" ? "rtl" : "ltr");
+      sdlg.querySelector(".sh-title").textContent = T.btn;
+      sdlg.querySelector(".st-wait").textContent = T.make;
+      sdlg.querySelector(".st-wait").hidden = false;
+      var img = sdlg.querySelector("img"); img.hidden = true;
+      var canFiles = false;
+      try { canFiles = !!(navigator.canShare && navigator.canShare({ files: [new File(["x"], "x.png", { type: "image/png" })] })); } catch (e) {}
+      var sb = sdlg.querySelector(".st-share"), db = sdlg.querySelector(".st-dl");
+      sb.textContent = T.share; sb.hidden = !canFiles; sb.disabled = true;
+      db.textContent = "⤓ " + T.dl; db.disabled = true;
+      sdlg.querySelector(".st-hint").textContent = canFiles ? T.hintShare : T.hintDl;
+      if (dlg.open) dlg.close();
+      sdlg.showModal();
+      makeStory(d.story).then(function (blob) {
+        if (!blob) return;
+        storyFile = new File([blob], "adlarimiz-" + (d.id || "place") + ".png", { type: "image/png" });
+        if (storyUrl) URL.revokeObjectURL(storyUrl);
+        storyUrl = URL.createObjectURL(blob);
+        img.src = storyUrl; img.hidden = false;
+        sdlg.querySelector(".st-wait").hidden = true;
+        sb.disabled = false; db.disabled = false;
+        sdlg.dataset.ready = "1";
+      });
+    }
+    sdlg.querySelector(".st-share").onclick = function () {
+      if (!storyFile) return;
+      navigator.share({ files: [storyFile], title: current && current.title, text: current && current.url }).catch(function () {});
+    };
+    sdlg.querySelector(".st-dl").onclick = function () {
+      if (!storyUrl) return;
+      var a = document.createElement("a"); a.href = storyUrl; a.download = storyFile.name; document.body.appendChild(a); a.click(); a.remove();
+    };
+    window.__adlarimizStory = { make: makeStory };
+
     // ---- data for a place (read from its popup) ----
     function placeData(pop) {
       var fix = pop.querySelector("[data-fix]"); if (!fix) return null;
@@ -479,7 +709,7 @@
       var t = s(), title = t.place(orig.trim(), fa);
       if (desc.length > 220) desc = desc.slice(0, 217).replace(/\s+\S*$/, "") + "…";
       var url = SITE + "?place=" + enc(id);
-      return { title: title, text: title + (desc ? "\n" + desc : ""), short: title, url: url, tags: t.tags, heading: orig.trim() };
+      return { id: id, title: title, text: title + (desc ? "\n" + desc : ""), short: title, url: url, tags: t.tags, heading: orig.trim(), story: storyInfo(pop) };
     }
     function siteData() {
       var t = s();
