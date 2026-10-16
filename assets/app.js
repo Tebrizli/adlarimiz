@@ -45,27 +45,33 @@
   // 2) approved suggestions from the last visit come from a local cache (also immediate),
   // 3) the live list from Google Apps Script is fetched in the background and merged when it arrives.
   const CACHE_KEY = "approvedCache.v1";
+  let hiddenIds = new Set();                // places the admin removed from the map
   function buildPlaces(rows) {
     const seed = Array.isArray(window.SEED_PLACES) ? window.SEED_PLACES : [];
     const byId = new Map(seed.map((p) => [p.id, p]));
     // approved rows with the same id (or refId = a correction) are merged over the seed entry
     (rows || []).map(fromRow).filter(Boolean).forEach((p) => byId.set(p.id, byId.has(p.id) ? mergePlace(byId.get(p.id), p) : p));
+    hiddenIds.forEach((id) => byId.delete(id));
     return Array.from(byId.values());
   }
   function readCache() {
     try { const c = JSON.parse(localStorage.getItem(CACHE_KEY) || "null"); return c && Array.isArray(c.items) ? c.items : []; } catch (e) { return []; }
   }
-  function loadLocal() { places = buildPlaces(readCache()); }
+  function readHiddenCache() {
+    try { const c = JSON.parse(localStorage.getItem(CACHE_KEY) || "null"); return c && Array.isArray(c.hidden) ? c.hidden : []; } catch (e) { return []; }
+  }
+  function loadLocal() { hiddenIds = new Set(readHiddenCache()); places = buildPlaces(readCache()); }
   async function loadRemote() {
     if (!CFG.APPS_SCRIPT_URL) return false;
     try {
       const r = await fetch(CFG.APPS_SCRIPT_URL + "?action=approved&_=" + Date.now());
       const j = await r.json();
       if (!j || !j.ok) return false;
-      const items = j.items || [];
-      const before = JSON.stringify(readCache());
-      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ t: Date.now(), items })); } catch (e) {}
-      if (JSON.stringify(items) === before) return false;       // nothing new: no re-render needed
+      const items = j.items || [], hidden = j.hidden || [];
+      const before = JSON.stringify([readCache(), readHiddenCache()]);
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ t: Date.now(), items, hidden })); } catch (e) {}
+      if (JSON.stringify([items, hidden]) === before) return false;       // nothing new: no re-render needed
+      hiddenIds = new Set(hidden);
       places = buildPlaces(items);
       return true;
     } catch (e) { console.warn("Could not load approved submissions", e); return false; }
@@ -426,6 +432,18 @@
   map.on("moveend zoomend", queueSync);
   $("#list").addEventListener("scroll", (e) => { const el = e.target; if (el.scrollTop + el.clientHeight > el.scrollHeight - 400) showMoreItems(); });
   window.__adlarimizFocus = (id) => focusPlace(id);
+  // admin: remove (hidden=true) or bring back a place on this page right away
+  window.__adlarimizSetHidden = (id, hidden) => {
+    if (hidden) hiddenIds.add(id); else hiddenIds.delete(id);
+    try {
+      const c = JSON.parse(localStorage.getItem(CACHE_KEY) || "null") || { items: [] };
+      c.hidden = Array.from(hiddenIds); localStorage.setItem(CACHE_KEY, JSON.stringify(c));
+    } catch (e) {}
+    map.closePopup();
+    places = buildPlaces(readCache());
+    renderList(); renderMarkers();
+  };
+  window.__adlarimizPlaces = () => places;
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && picking) setPicking(false); });
   $("#f-cancel").addEventListener("click", () => { $("#form-dlg").close(); if (tempMarker) tempMarker.remove(); });
   $("#suggest-form").addEventListener("submit", submitForm);
