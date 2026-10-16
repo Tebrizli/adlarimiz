@@ -1756,35 +1756,6 @@ window.SEED_PLACES = [
     "approx": true
   },
   {
-    "id": "deveci",
-    "type": "other",
-    "status": "changed",
-    "lat": 38.087,
-    "lng": 46.297,
-    "original": {
-      "latin": "Dəvəçi",
-      "arabic": "دوه‌چی"
-    },
-    "persian": {
-      "fa": "شتربان",
-      "latin": "Shotorban"
-    },
-    "province": "East Azerbaijan (Tabriz)",
-    "period": "unknown",
-    "desc": {
-      "en": "Historic quarter north of the Mehranrud, known to Tabrizis as Dəvəçi (\"camel-driver\"). Its official name is the Persian equivalent Shotorban. Some Persian writers argue that Shotorban was the original name. Location approximate.",
-      "tr": "Mehranrud'un kuzeyindeki tarihî mahalle, Tebrizliler için Deveci'dir. Resmî adı Farsça karşılığı olan Şoterban'dır. Bazı Farsça yazarlar asıl adın Şoterban olduğunu savunuyor. Konum yaklaşıktır.",
-      "az": "Mehranrudun şimalındakı tarixi məhəllə, təbrizlilər üçün Dəvəçidir. Rəsmi adı farsca qarşılığı olan Şotorbandır. Bəzi fars müəllifləri əsl adın Şotorban olduğunu iddia edir. Yer təxminidir.",
-      "fa": "محلهٔ تاریخی شمال مهرانرود که تبریزیان آن را «دوه‌چی» (ساربان) می‌نامند. نام رسمی آن معادل فارسی «شتربان» است. برخی نویسندگان فارسی‌زبان شتربان را نام اصلی می‌دانند. مکان تقریبی است."
-    },
-    "sources": [
-      "https://en.wikipedia.org/wiki/Davachi_(Shotorban)",
-      "https://kayhan.london/1399/11/11/228847/"
-    ],
-    "confidence": "medium",
-    "approx": true
-  },
-  {
     "id": "leylava",
     "type": "other",
     "status": "changed",
