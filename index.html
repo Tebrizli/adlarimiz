@@ -99,6 +99,13 @@ body.admin-open{overflow:hidden}
 #admin-view .fixb s{color:var(--red)}
 @media(max-width:760px){#admin-view .card{grid-template-columns:1fr}#admin-view .grid{grid-template-columns:1fr}}
 .topbar .brand{cursor:default;user-select:none;-webkit-user-select:none;-webkit-tap-highlight-color:transparent}
+#admin-view .btn.danger, .adm-pop .btn.danger{background:#fff;color:#a3141f;border-color:#a3141f}
+#admin-view .adm-h{margin:26px 0 4px;color:var(--navy)}
+#admin-view .hid-row{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-bottom:6px}
+.adm-pop{margin-top:10px;padding-top:8px;border-top:1px dashed #e0a000;display:flex;flex-direction:column;gap:6px}
+.adm-pop .adm-pop-t{font-size:.7rem;font-weight:700;color:#8a5a00;text-transform:uppercase;letter-spacing:.05em}
+.adm-pop .btn{width:100%;padding:6px 10px;font-size:.82rem}
+.adm-pop .adm-hide{background:#fff6e0;color:#8a5a00;border-color:#ecd59a}
 </style>
 </head>
 <body>
@@ -806,6 +813,9 @@ body.admin-open{overflow:hidden}
     </div>
     <p id="adm-status" class="meta"></p>
     <div id="adm-rows"></div>
+    <h3 class="adm-h">Removed from the map</h3>
+    <p class="meta">Places you removed. Built-in places stay hidden until you also take them out of <code>data/places.js</code> (Export places.js does that).</p>
+    <div id="adm-hidden"><p class="meta">Load first.</p></div>
   </div>
 </section>
 <script>
@@ -841,8 +851,12 @@ body.admin-open{overflow:hidden}
   async function load() {
     try { sessionStorage.setItem("adminKey", $("#adm-key").value.trim()); } catch (e) {}
     status("Loading…");
-    try { rows = (await api({ action: "admin_list" })).items.reverse(); render(); }
-    catch (e) { status("Error: " + e.message); }
+    try {
+      const res = await api({ action: "admin_list" });
+      rows = res.items.reverse(); hidden = res.hidden || [];
+      adminOK = true; render(); renderHidden();
+    }
+    catch (e) { adminOK = false; status("Error: " + e.message); }
   }
 
   const SEED = Array.isArray(window.SEED_PLACES) ? window.SEED_PLACES : [];
@@ -878,6 +892,7 @@ body.admin-open{overflow:hidden}
             <button class="btn no" data-act="rejected">Reject</button>
             <button class="btn ghost" data-act="save">Save edits</button>
             <button class="btn ghost" data-act="pending">Back to pending</button>
+            <button class="btn danger" data-del="${esc(r.refId || r.id)}" title="Removes every row of this place from the Sheet and hides it from the map">🗑 Delete permanently</button>
           </div>
         </div>
         <div class="mini" id="adm-m-${esc(r.id)}"></div>
@@ -916,7 +931,8 @@ body.admin-open{overflow:hidden}
   $("#adm-export").addEventListener("click", async () => {
     const seed = Array.isArray(window.SEED_PLACES) ? window.SEED_PLACES : [];
     const map = new Map(seed.map((p) => [p.id, p]));
-    rows.filter((r) => r.status === "approved").forEach((r) => {
+    hidden.forEach((id) => map.delete(id));
+    rows.filter((r) => r.status === "approved" && hidden.indexOf(r.refId || r.id) === -1).forEach((r) => {
       const d = r.description || "";
       const key = r.refId || r.id;
       const base = map.get(key);
@@ -949,6 +965,68 @@ body.admin-open{overflow:hidden}
     const blob = new Blob([js], { type: "text/javascript" });
     const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "places.js"; a.click();
   });
+
+  // ---------- removing places ----------
+  let hidden = [], adminOK = false;
+  const placeName = (id) => {
+    const all = (window.__adlarimizPlaces ? window.__adlarimizPlaces() : []).concat(SEED);
+    const p = all.find((x) => x.id === id); return p ? p.original.latin + " → " + p.persian.fa : id;
+  };
+  function renderHidden() {
+    const box = $("#adm-hidden");
+    if (!hidden.length) { box.innerHTML = '<p class="meta">Nothing removed.</p>'; return; }
+    box.innerHTML = hidden.map((id) => `<div class="hid-row"><span><b>${esc(placeName(id))}</b> <span class="meta">(${esc(id)})</span></span><button class="btn ghost" data-unhide="${esc(id)}">↺ Restore</button></div>`).join("");
+  }
+  // two-step confirmation without a browser dialog: first click arms the button
+  function armed(b, label) {
+    if (b.dataset.armed) return true;
+    b.dataset.armed = "1"; b.dataset.label = b.textContent; b.textContent = label;
+    setTimeout(() => { if (b.isConnected) { delete b.dataset.armed; b.textContent = b.dataset.label; } }, 4000);
+    return false;
+  }
+  async function doHide(id, purge) {
+    const res = await api({ action: purge ? "admin_purge" : "admin_hide", id });
+    if (hidden.indexOf(id) === -1) hidden.push(id);
+    if (purge) rows = rows.filter((r) => r.id !== id && r.refId !== id);
+    if (window.__adlarimizSetHidden) window.__adlarimizSetHidden(id, true);
+    render(); renderHidden();
+    return res;
+  }
+  root.addEventListener("click", async (e) => {
+    const d = e.target.closest("[data-del]"), u = e.target.closest("[data-unhide]");
+    if (d) {
+      if (!armed(d, "Sure? Click again to delete")) return;
+      d.disabled = true;
+      try { await doHide(d.dataset.del, true); } catch (err) { status("Error: " + err.message); d.disabled = false; }
+    } else if (u) {
+      u.disabled = true;
+      try {
+        await api({ action: "admin_unhide", id: u.dataset.unhide });
+        hidden = hidden.filter((x) => x !== u.dataset.unhide);
+        if (window.__adlarimizSetHidden) window.__adlarimizSetHidden(u.dataset.unhide, false);
+        renderHidden();
+      } catch (err) { status("Error: " + err.message); u.disabled = false; }
+    }
+  });
+  // after logging in, every map popup gets admin buttons
+  function addAdminButtons(pop) {
+    if (!adminOK || pop.querySelector(".adm-pop")) return;
+    const fix = pop.querySelector("[data-fix]"); if (!fix) return;
+    const id = fix.getAttribute("data-fix");
+    const box = document.createElement("div");
+    box.className = "adm-pop";
+    box.innerHTML = '<div class="adm-pop-t">Admin</div><button type="button" class="btn adm-hide">🙈 Remove from map</button><button type="button" class="btn danger adm-purge">🗑 Delete permanently</button>';
+    box.querySelector(".adm-hide").onclick = async (e) => {
+      const b = e.currentTarget; if (!armed(b, "Sure? Click again")) return; b.disabled = true;
+      try { await doHide(id, false); } catch (err) { b.textContent = "Error: " + err.message; }
+    };
+    box.querySelector(".adm-purge").onclick = async (e) => {
+      const b = e.currentTarget; if (!armed(b, "Sure? Click again")) return; b.disabled = true;
+      try { await doHide(id, true); } catch (err) { b.textContent = "Error: " + err.message; }
+    };
+    pop.appendChild(box);
+  }
+  if (window.__popupHooks) window.__popupHooks.push(addAdminButtons);
 
   // ---------- hidden entry: 5 quick taps on the logo/title, or Ctrl+Shift+Y ----------
   function openAdmin() {
