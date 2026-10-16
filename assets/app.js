@@ -40,20 +40,35 @@
   const haystack = (p) => norm([p.original.latin, p.original.arabic, p.persian.fa, p.persian.latin, p.province].join("|"));
 
   // ---------- data ----------
-  async function loadData() {
+  // ---------- data ----------
+  // 1) the built-in list (data/places.js) is shown immediately,
+  // 2) approved suggestions from the last visit come from a local cache (also immediate),
+  // 3) the live list from Google Apps Script is fetched in the background and merged when it arrives.
+  const CACHE_KEY = "approvedCache.v1";
+  function buildPlaces(rows) {
     const seed = Array.isArray(window.SEED_PLACES) ? window.SEED_PLACES : [];
-    let approved = [];
-    if (CFG.APPS_SCRIPT_URL) {
-      try {
-        const r = await fetch(CFG.APPS_SCRIPT_URL + "?action=approved&_=" + Date.now());
-        const j = await r.json();
-        if (j && j.ok) approved = (j.items || []).map(fromRow).filter(Boolean);
-      } catch (e) { console.warn("Could not load approved submissions", e); }
-    }
     const byId = new Map(seed.map((p) => [p.id, p]));
     // approved rows with the same id (or refId = a correction) are merged over the seed entry
-    approved.forEach((p) => byId.set(p.id, byId.has(p.id) ? mergePlace(byId.get(p.id), p) : p));
-    places = Array.from(byId.values());
+    (rows || []).map(fromRow).filter(Boolean).forEach((p) => byId.set(p.id, byId.has(p.id) ? mergePlace(byId.get(p.id), p) : p));
+    return Array.from(byId.values());
+  }
+  function readCache() {
+    try { const c = JSON.parse(localStorage.getItem(CACHE_KEY) || "null"); return c && Array.isArray(c.items) ? c.items : []; } catch (e) { return []; }
+  }
+  function loadLocal() { places = buildPlaces(readCache()); }
+  async function loadRemote() {
+    if (!CFG.APPS_SCRIPT_URL) return false;
+    try {
+      const r = await fetch(CFG.APPS_SCRIPT_URL + "?action=approved&_=" + Date.now());
+      const j = await r.json();
+      if (!j || !j.ok) return false;
+      const items = j.items || [];
+      const before = JSON.stringify(readCache());
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ t: Date.now(), items })); } catch (e) {}
+      if (JSON.stringify(items) === before) return false;       // nothing new: no re-render needed
+      places = buildPlaces(items);
+      return true;
+    } catch (e) { console.warn("Could not load approved submissions", e); return false; }
   }
 
   function mergePlace(base, upd) {
@@ -126,17 +141,40 @@
 
   function labelName(p) { return (lang === "fa" && p.original.arabic ? p.original.arabic : p.original.latin).replace(/\s*\(.*\)\s*$/, ""); }
 
+  // Markers are created only for places inside (or near) the visible map area, and a label is
+  // attached only when the zoom level is high enough for it. This keeps the page fast with
+  // thousands of places.
+  let markerPool = [];                      // places that pass the current filter/search
+  function createMarker(p) {
+    const cls = p.status === "restored" ? "restored" : p.user ? "user" : "";
+    const m = L.marker([p.lat, p.lng], { icon: pinIcon(cls), title: p.original.latin }).addTo(map);
+    m.bindPopup(() => popupHtml(p), { maxWidth: 340 });
+    m.on("popupopen", () => { highlight(p.id); history.replaceState(null, "", "#place=" + encodeURIComponent(p.id)); });
+    markers[p.id] = m;
+    return m;
+  }
+  function syncMarkers() {
+    const b = map.getBounds().pad(0.35), z = map.getZoom(), keep = new Set();
+    markerPool.forEach((p) => {
+      let m = markers[p.id];
+      const inView = b.contains([p.lat, p.lng]);
+      if (!inView && !(m && m.isPopupOpen())) return;
+      keep.add(p.id);
+      if (!m) m = createMarker(p);
+      const wantLabel = z >= labelMinZoom(p);
+      if (wantLabel && !m.getTooltip()) {
+        m.bindTooltip(esc(labelName(p)), { permanent: true, direction: "right", offset: [6, -10], className: "lbl lz" + labelMinZoom(p) + " " + (p.status === "restored" ? "restored" : "") });
+      } else if (!wantLabel && m.getTooltip()) m.unbindTooltip();
+    });
+    Object.keys(markers).forEach((id) => { if (!keep.has(id)) { markers[id].remove(); delete markers[id]; } });
+  }
+  let syncQueued = false;
+  function queueSync() { if (syncQueued) return; syncQueued = true; requestAnimationFrame(() => { syncQueued = false; syncMarkers(); }); }
   function renderMarkers() {
     Object.values(markers).forEach((m) => m.remove());
     markers = {};
-    visiblePlaces().forEach((p) => {
-      const cls = p.status === "restored" ? "restored" : p.user ? "user" : "";
-      const m = L.marker([p.lat, p.lng], { icon: pinIcon(cls), title: p.original.latin }).addTo(map);
-      m.bindTooltip(esc(labelName(p)), { permanent: true, direction: "right", offset: [6, -10], className: "lbl lz" + labelMinZoom(p) + " " + (p.status === "restored" ? "restored" : "") });
-      m.bindPopup(() => popupHtml(p), { maxWidth: 340 });
-      m.on("popupopen", () => { highlight(p.id); history.replaceState(null, "", "#place=" + encodeURIComponent(p.id)); });
-      markers[p.id] = m;
-    });
+    markerPool = visiblePlaces();
+    syncMarkers();
   }
 
   function popupHtml(p) {
@@ -178,23 +216,36 @@
       .sort((a, b) => a.original.latin.localeCompare(b.original.latin, "az"));
   }
 
-  function renderList() {
-    const items = visiblePlaces();
-    $("#count").textContent = t("count").replace("{n}", items.length);
-    const ul = $("#list");
-    if (!items.length) {
-      ul.innerHTML = `<li class="empty">${esc(t("noResults"))}</li>`;
-    } else {
-      ul.innerHTML = items.map((p) => {
-        const typeName = (t("types") || {})[p.type] || p.type;
-        const desc = descFor(p) || "";
-        return `<li class="item" data-id="${esc(p.id)}">
+  // The side list is rendered in chunks; more rows are added while scrolling.
+  const LIST_CHUNK = 150;
+  let listItems = [], listShown = 0;
+  function itemHtml(p) {
+    const typeName = (t("types") || {})[p.type] || p.type;
+    const desc = descFor(p) || "";
+    return `<li class="item" data-id="${esc(p.id)}">
           <span class="dot ${p.status === "restored" ? "restored" : ""}"></span>
           <div class="names">${esc(p.original.latin)}${p.original.arabic ? `<span class="ar" dir="rtl">${esc(p.original.arabic)}</span>` : ""}<span class="badge">${esc(typeName)}</span>${p.confidence === "low" ? `<span class="conf low">${esc(t("confLow"))}</span>` : ""}</div>
           <div class="fa">${lang === "fa" ? "←" : "→"} <s dir="rtl">${esc(p.persian.fa)}</s>${p.persian.latin ? " (" + esc(p.persian.latin) + ")" : ""}</div>
           <div class="desc">${esc(desc)}</div>
         </li>`;
-      }).join("");
+  }
+  function showMoreItems(upTo) {
+    const ul = $("#list");
+    const end = Math.min(listItems.length, Math.max(upTo || 0, listShown + LIST_CHUNK));
+    if (end <= listShown) return;
+    ul.insertAdjacentHTML("beforeend", listItems.slice(listShown, end).map(itemHtml).join(""));
+    listShown = end;
+  }
+  function renderList() {
+    const items = visiblePlaces();
+    $("#count").textContent = t("count").replace("{n}", items.length);
+    const ul = $("#list");
+    listItems = items; listShown = 0;
+    if (!items.length) {
+      ul.innerHTML = `<li class="empty">${esc(t("noResults"))}</li>`;
+    } else {
+      ul.innerHTML = "";
+      showMoreItems();
     }
     // geo search button
     const gb = $("#geo-search");
@@ -203,6 +254,8 @@
   }
 
   function highlight(id) {
+    const idx = listItems.findIndex((p) => p.id === id);
+    if (idx >= listShown) showMoreItems(idx + 1);
     $$(".item").forEach((el) => el.classList.toggle("active", el.dataset.id === id));
     const el = $(`.item[data-id="${CSS.escape(id)}"]`);
     if (el) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -210,8 +263,8 @@
 
   function focusPlace(id) {
     const p = places.find((x) => x.id === id);
-    const m = markers[id];
-    if (!p || !m) return;
+    if (!p) return;
+    const m = markers[id] || createMarker(p);
     map.flyTo([p.lat, p.lng], Math.max(map.getZoom(), p.type === "region" ? 9 : 11), { duration: 0.8 });
     setTimeout(() => m.openPopup(), 850);
     $("#sidebar").classList.remove("open");
@@ -370,16 +423,26 @@
   $("#toggle-list").addEventListener("click", () => $("#sidebar").classList.toggle("open"));
   map.on("click", (e) => { if (picking) openForm(e.latlng); });
   map.on("zoomend", updateZoomClass); updateZoomClass();
+  map.on("moveend zoomend", queueSync);
+  $("#list").addEventListener("scroll", (e) => { const el = e.target; if (el.scrollTop + el.clientHeight > el.scrollHeight - 400) showMoreItems(); });
+  window.__adlarimizFocus = (id) => focusPlace(id);
   document.addEventListener("keydown", (e) => { if (e.key === "Escape" && picking) setPicking(false); });
   $("#f-cancel").addEventListener("click", () => { $("#form-dlg").close(); if (tempMarker) tempMarker.remove(); });
   $("#suggest-form").addEventListener("submit", submitForm);
   document.addEventListener("click", (e) => { const b = e.target.closest("[data-fix]"); if (b) openFix(b.dataset.fix); });
 
   // ---------- start ----------
-  applyLang();
-  loadData().then(() => {
-    applyLang();
-    const m = location.hash.match(/place=([^&]+)/);
-    if (m) focusPlace(decodeURIComponent(m[1]));
+  const hashPlace = () => { const m = location.hash.match(/place=([^&]+)/); return m ? decodeURIComponent(m[1]) : null; };
+  loadLocal();
+  applyLang();                                   // markers + list appear right away
+  let focused = false;
+  const want = hashPlace();
+  if (want && places.some((p) => p.id === want)) { focusPlace(want); focused = true; }
+  loadRemote().then((changed) => {
+    if (!changed) { if (want && !focused && places.some((p) => p.id === want)) focusPlace(want); return; }
+    const openId = document.querySelector(".leaflet-popup") ? hashPlace() : null;
+    renderList(); renderMarkers();
+    const target = (!focused && want) ? want : openId;
+    if (target && places.some((p) => p.id === target)) setTimeout(() => focusPlace(target), focused ? 0 : 0);
   });
 })();
