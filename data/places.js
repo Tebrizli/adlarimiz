@@ -1,4 +1,4 @@
-// Başlangıç listesi / seed list. Admin sayfasındaki "Export places.js" ile güncellenir.
+// Başlangıç listesi / seed list. Admin panelindeki "Export places.js" ile güncellenir.
 window.SEED_PLACES = [
   {
     "id": "xiyav",
@@ -1754,5 +1754,373 @@ window.SEED_PLACES = [
     ],
     "confidence": "low",
     "approx": true
+  },
+  {
+    "id": "deveci",
+    "type": "other",
+    "status": "changed",
+    "lat": 38.087,
+    "lng": 46.297,
+    "original": {
+      "latin": "Dəvəçi",
+      "arabic": "دوه‌چی"
+    },
+    "persian": {
+      "fa": "شتربان",
+      "latin": "Shotorban"
+    },
+    "province": "East Azerbaijan (Tabriz)",
+    "period": "unknown",
+    "desc": {
+      "en": "Historic quarter north of the Mehranrud, known to Tabrizis as Dəvəçi (\"camel-driver\"). Its official name is the Persian equivalent Shotorban. Some Persian writers argue that Shotorban was the original name. Location approximate.",
+      "tr": "Mehranrud'un kuzeyindeki tarihî mahalle, Tebrizliler için Deveci'dir. Resmî adı Farsça karşılığı olan Şoterban'dır. Bazı Farsça yazarlar asıl adın Şoterban olduğunu savunuyor. Konum yaklaşıktır.",
+      "az": "Mehranrudun şimalındakı tarixi məhəllə, təbrizlilər üçün Dəvəçidir. Rəsmi adı farsca qarşılığı olan Şotorbandır. Bəzi fars müəllifləri əsl adın Şotorban olduğunu iddia edir. Yer təxminidir.",
+      "fa": "محلهٔ تاریخی شمال مهرانرود که تبریزیان آن را «دوه‌چی» (ساربان) می‌نامند. نام رسمی آن معادل فارسی «شتربان» است. برخی نویسندگان فارسی‌زبان شتربان را نام اصلی می‌دانند. مکان تقریبی است."
+    },
+    "sources": [
+      "https://en.wikipedia.org/wiki/Davachi_(Shotorban)",
+      "https://kayhan.london/1399/11/11/228847/"
+    ],
+    "confidence": "medium",
+    "approx": true
+  },
+  {
+    "id": "leylava",
+    "type": "other",
+    "status": "changed",
+    "lat": 38.066,
+    "lng": 46.296,
+    "original": {
+      "latin": "Leylava",
+      "arabic": "لیلاوا"
+    },
+    "persian": {
+      "fa": "لیل‌آباد",
+      "latin": "Leylabad"
+    },
+    "province": "East Azerbaijan (Tabriz)",
+    "period": "unknown",
+    "desc": {
+      "en": "Historic district in south-central Tabriz. Its local name Leylava (Lilava) was Persianized as Leylabad by replacing the -ava ending with -abad. Location approximate.",
+      "tr": "Tebriz'in güney-orta kesimindeki tarihî semt. Yerel adı Leylava, \"-ava\" eki Farsça \"-abad\" ile değiştirilerek Leylabad yapıldı. Konum yaklaşıktır.",
+      "az": "Təbrizin cənub-mərkəz hissəsindəki tarixi məhəllə. Yerli adı Leylava, \"-ava\" şəkilçisi fars \"-abad\" ilə əvəz edilərək Leylabad edilib. Yer təxminidir.",
+      "fa": "محلهٔ تاریخی در جنوب مرکز تبریز. نام محلی «لیلاوا» با جایگزینی پسوند «-اوا» با «-آباد» به لیل‌آباد تبدیل شد. مکان تقریبی است."
+    },
+    "sources": [
+      "https://en.wikipedia.org/wiki/Lilava"
+    ],
+    "confidence": "medium",
+    "approx": true
+  },
+  {
+    "id": "qutmeydani",
+    "type": "square",
+    "status": "changed",
+    "lat": 38.078,
+    "lng": 46.31,
+    "original": {
+      "latin": "Qut meydanı",
+      "arabic": "قوت میدانی"
+    },
+    "persian": {
+      "fa": "میدان قطب",
+      "latin": "Meydan-e Qotb"
+    },
+    "province": "East Azerbaijan (Tabriz)",
+    "period": "unknown",
+    "desc": {
+      "en": "Square in the Khiyaban quarter. Azerbaijani sources list it as Qut meydanı (qut = \"fortune, blessing\"; locally also heard as Qurd meydanı) Persianized as Meydan-e Qotb (\"pole\"). Location approximate.",
+      "tr": "Hıyaban semtindeki meydan. Azerbaycan kaynakları onu Kut meydanı (kut = \"talih, bereket\"; halk arasında Kurt meydanı da denir) olarak verir; Farsçalaştırılarak Meydan-ı Kutb (\"kutup\") yapıldı. Konum yaklaşıktır.",
+      "az": "Xiyaban məhəlləsindəki meydan. Azərbaycan mənbələri onu Qut meydanı (qut = \"bəxt, bərəkət\"; xalq arasında Qurd meydanı da deyilir) kimi verir; farslaşdırılaraq Meydan-e Qotb edilib. Yer təxminidir.",
+      "fa": "میدانی در محلهٔ خیابان. منابع آذربایجانی آن را «قوت میدانی» (قوت = بخت و برکت؛ در زبان مردم «قورد میدانی») می‌دانند که به «میدان قطب» تبدیل شد. مکان تقریبی است."
+    },
+    "sources": [
+      "https://en.wikipedia.org/wiki/Khiyaban",
+      "https://becan.az/index.php?newsid=1325"
+    ],
+    "confidence": "medium",
+    "approx": true
+  },
+  {
+    "id": "demirqapi",
+    "type": "landmark",
+    "status": "changed",
+    "lat": 38.078,
+    "lng": 46.305,
+    "original": {
+      "latin": "Dəmirqapı",
+      "arabic": "دمیرقاپی"
+    },
+    "persian": {
+      "fa": "درب خیابان",
+      "latin": "Darb-e Khiyaban"
+    },
+    "province": "East Azerbaijan (Tabriz)",
+    "period": "unknown",
+    "desc": {
+      "en": "One of the historic gates of Tabriz's city wall, also called Dəmirqapı (\"iron gate\"); today it is known by the Persian name Darb-e Khiyaban. Location approximate.",
+      "tr": "Tebriz sur kapılarından biri, Demirkapı (\"demir kapı\") olarak da bilinir; bugün Farsça Derb-i Hıyaban adıyla anılıyor. Konum yaklaşıktır.",
+      "az": "Təbriz qala divarının tarixi qapılarından biri, Dəmirqapı kimi də tanınır; bu gün farsca Dərbe-Xiyaban adı ilə anılır. Yer təxminidir.",
+      "fa": "یکی از دروازه‌های تاریخی باروی تبریز که «دمیرقاپی» (دروازهٔ آهنین) نیز خوانده می‌شد؛ امروز با نام فارسی «درب خیابان» شناخته می‌شود. مکان تقریبی است."
+    },
+    "sources": [
+      "https://en.wikipedia.org/wiki/Khiyaban"
+    ],
+    "confidence": "low",
+    "approx": true
+  },
+  {
+    "id": "beylenki",
+    "type": "other",
+    "status": "changed",
+    "lat": 38.088,
+    "lng": 46.275,
+    "original": {
+      "latin": "Beylənki",
+      "arabic": "بیلانکی"
+    },
+    "persian": {
+      "fa": "بیلانکوه",
+      "latin": "Beylankuh"
+    },
+    "province": "East Azerbaijan (Tabriz)",
+    "period": "unknown",
+    "desc": {
+      "en": "Old Tabriz quarter recorded as Beylənki; the official form Beylankuh adds the Persian word kuh (\"mountain\"). Location approximate.",
+      "tr": "Eski Tebriz semti Beylenki; resmî biçim Beylankuh, adın sonuna Farsça \"kuh\" (dağ) kelimesini ekliyor. Konum yaklaşıktır.",
+      "az": "Köhnə Təbriz məhəlləsi Beylənki; rəsmi forma Beylankuh adın sonuna farsca \"kuh\" (dağ) sözünü əlavə edir. Yer təxminidir.",
+      "fa": "محلهٔ قدیمی تبریز با نام «بیلانکی»؛ شکل رسمی «بیلانکوه» واژهٔ فارسی «کوه» را به آن افزوده است. مکان تقریبی است."
+    },
+    "sources": [
+      "https://en.wikipedia.org/wiki/Tabriz"
+    ],
+    "confidence": "low",
+    "approx": true
+  },
+  {
+    "id": "kucuvar",
+    "type": "other",
+    "status": "restored",
+    "lat": 38.0611,
+    "lng": 46.1383,
+    "original": {
+      "latin": "Kücüvar",
+      "arabic": "کوجووار"
+    },
+    "persian": {
+      "fa": "کجاباد",
+      "latin": "Kojabad"
+    },
+    "province": "East Azerbaijan (Tabriz)",
+    "period": "2006 → restored by 2011",
+    "desc": {
+      "en": "Former village (now part of Tabriz) with the Azerbaijani name Kücüvar. It was officially recorded as Kojabad (Persian -abad form) in the 2006 census, then renamed back to Kujuvar by 2011; Tabriz annexed it in 2018.",
+      "tr": "Azerbaycanca adı Kücüvar olan eski köy (bugün Tebriz'in parçası). 2006 sayımında resmen Kocabad (Farsça -abad biçimi) olarak kaydedildi, 2011'de yeniden Kucuvar oldu; 2018'de Tebriz'e katıldı.",
+      "az": "Azərbaycanca adı Kücüvar olan keçmiş kənd (indi Təbrizin tərkibində). 2006 siyahıyaalmasında rəsmi olaraq Kocabad (fars -abad forması) yazılıb, 2011-ə qədər yenidən Kucuvar olub; 2018-də Təbrizə birləşdirilib.",
+      "fa": "روستای پیشین (اکنون بخشی از تبریز) با نام ترکی «کوجووار». در سرشماری ۱۳۸۵ رسماً «کجاباد» ثبت شد و تا ۱۳۹۰ دوباره کوجووار شد؛ در ۲۰۱۸ به تبریز پیوست."
+    },
+    "sources": [
+      "https://en.wikipedia.org/wiki/Kujuvar"
+    ],
+    "confidence": "medium"
+  },
+  {
+    "id": "enecmeydani",
+    "type": "square",
+    "status": "changed",
+    "lat": 38.0786,
+    "lng": 46.2997,
+    "original": {
+      "latin": "Ənəc meydanı",
+      "arabic": "انگج میدانی"
+    },
+    "persian": {
+      "fa": "میدان صاحب‌الامر",
+      "latin": "Meydan-e Saheb ol-Amr"
+    },
+    "province": "East Azerbaijan (Tabriz)",
+    "period": "unknown",
+    "desc": {
+      "en": "An anthropological study of Tabriz pairs the local name Ənəc meydanı with the official religious name Saheb ol-Amr Square. Needs verification. Location approximate.",
+      "tr": "Tebriz üzerine bir antropoloji çalışması yerel ad Enec meydanı ile resmî dinî ad Sahibü'l-Emr meydanını eşleştiriyor. Doğrulanmalıdır. Konum yaklaşıktır.",
+      "az": "Təbriz haqqında antropoloji tədqiqat yerli Ənəc meydanı adını rəsmi dini ad olan Sahibəl-Əmr meydanı ilə eyniləşdirir. Yoxlanmalıdır. Yer təxminidir.",
+      "fa": "یک پژوهش مردم‌شناختی دربارهٔ تبریز نام محلی «انگج میدانی» را با نام رسمی مذهبی «میدان صاحب‌الامر» یکی می‌داند. نیازمند تأیید. مکان تقریبی است."
+    },
+    "sources": [
+      "https://anthropologyandculture.com/wp-content/uploads/2020/09/17939.pdf"
+    ],
+    "confidence": "low",
+    "approx": true
+  },
+  {
+    "id": "yeddigoz",
+    "type": "landmark",
+    "status": "changed",
+    "lat": 38.23836,
+    "lng": 48.29408,
+    "original": {
+      "latin": "Yeddi Göz körpüsü",
+      "arabic": "یئددی گؤز کؤرپوسو"
+    },
+    "persian": {
+      "fa": "پل هفت چشمه",
+      "latin": "Pol-e Haft Cheshmeh"
+    },
+    "province": "Ardabil",
+    "period": "unknown",
+    "desc": {
+      "en": "Safavid-era stone bridge over the Balıqlı çay in Ardabil. Its Turkic name Yeddi Göz (\"seven eyes\", i.e. seven arches) is officially used only as the Persian calque Pol-e Haft Cheshmeh.",
+      "tr": "Erdebil'de Balıklı Çay üzerindeki Safevî dönemi taş köprü. Türkçe adı Yedi Göz (\"yedi göz\", yani yedi kemer) resmî olarak yalnızca Farsça çevirisi Pol-i Heft Çeşme olarak kullanılıyor.",
+      "az": "Ərdəbildə Balıqlı çay üzərindəki Səfəvi dövrü daş körpü. Türkcə adı Yeddi Göz (yeddi tağ) rəsmi olaraq yalnız farsca tərcüməsi Pole-Həft Çeşmə kimi işlədilir.",
+      "fa": "پل سنگی دورهٔ صفوی بر بالیقلی‌چای اردبیل. نام ترکی آن «یئددی گؤز» (هفت چشمه/دهانه) رسماً تنها به صورت ترجمهٔ فارسی «پل هفت چشمه» به کار می‌رود."
+    },
+    "sources": [
+      "https://en.wikipedia.org/wiki/Ardabil",
+      "https://structurae.net/en/structures/yeddi-goz-bridge"
+    ],
+    "confidence": "high"
+  },
+  {
+    "id": "gullerbagi",
+    "type": "landmark",
+    "status": "changed",
+    "lat": 37.548,
+    "lng": 45.07,
+    "original": {
+      "latin": "Güllər bağı",
+      "arabic": "گوللر باغی"
+    },
+    "persian": {
+      "fa": "پارک دانشجو",
+      "latin": "Park-e Daneshjoo"
+    },
+    "province": "West Azerbaijan (Urmu)",
+    "period": "after 1979",
+    "desc": {
+      "en": "Urmu's historic park Güllər bağı (\"garden of roses\") officially carries the name Daneshjoo (\"student\") Park; locals still call it Güllər bağı. Location approximate.",
+      "tr": "Urmu'nun tarihî parkı Güller Bağı'nın (\"güller bahçesi\") resmî adı Daneşcu (\"öğrenci\") Parkı'dır; halk hâlâ Güller Bağı der. Konum yaklaşıktır.",
+      "az": "Urmunun tarixi parkı Güllər bağının rəsmi adı Danişcu (\"tələbə\") parkıdır; xalq hələ Güllər bağı deyir. Yer təxminidir.",
+      "fa": "پارک تاریخی «گوللر باغی» (باغ گل‌ها) در اورمو رسماً «پارک دانشجو» نام دارد؛ مردم هنوز گوللر باغی می‌گویند. مکان تقریبی است."
+    },
+    "sources": [
+      "https://www.itto.org/iran/city/Urmia/"
+    ],
+    "confidence": "medium",
+    "approx": true
+  },
+  {
+    "id": "yurdsahqapisi",
+    "type": "square",
+    "status": "changed",
+    "lat": 37.547,
+    "lng": 45.067,
+    "original": {
+      "latin": "Yurdşah qapısı",
+      "arabic": "یوردشاه قاپیسی"
+    },
+    "persian": {
+      "fa": "میدان ایالت",
+      "latin": "Meydan-e Ayalat"
+    },
+    "province": "West Azerbaijan (Urmu)",
+    "period": "20th century",
+    "desc": {
+      "en": "The old Yurdşah gate of Urmu was demolished; its site is now the Persian-named Ayalat Square. The Yurdşah quarter was split by a street built in 1928–29. Location approximate.",
+      "tr": "Urmu'nun eski Yurdşah kapısı yıkıldı; yeri bugün Farsça adlı Eyalet Meydanı'dır. Yurdşah mahallesi 1928–29'da açılan bir caddeyle bölündü. Konum yaklaşıktır.",
+      "az": "Urmunun köhnə Yurdşah qapısı sökülüb; yeri indi farsca adlı Əyalət meydanıdır. Yurdşah məhəlləsi 1928–29-da salınan küçə ilə bölünüb. Yer təxminidir.",
+      "fa": "دروازهٔ قدیمی یوردشاه اورمو تخریب شد و جای آن امروز «میدان ایالت» با نام فارسی است. محلهٔ یوردشاه با خیابانی که در ۱۳۰۷–۱۳۰۸ کشیده شد دو نیم شد. مکان تقریبی است."
+    },
+    "sources": [
+      "https://urbans.blogfa.com/",
+      "https://ensani.ir/fa/article/download/644965"
+    ],
+    "confidence": "low",
+    "approx": true
+  },
+  {
+    "id": "bazarbasiqapisi",
+    "type": "square",
+    "status": "changed",
+    "lat": 37.551,
+    "lng": 45.081,
+    "original": {
+      "latin": "Bazarbaşı qapısı",
+      "arabic": "بازارباشی قاپیسی"
+    },
+    "persian": {
+      "fa": "میدان جانبازان",
+      "latin": "Meydan-e Janbazan"
+    },
+    "province": "West Azerbaijan (Urmu)",
+    "period": "after 1979",
+    "desc": {
+      "en": "Site of the historic Bazarbaşı gate of Urmu, now Janbazan Square. The Bazarbaşı quarter itself keeps its Turkic name. Location approximate.",
+      "tr": "Urmu'nun tarihî Bazarbaşı kapısının yeri, bugün Canbazan Meydanı. Bazarbaşı mahallesi Türkçe adını koruyor. Konum yaklaşıktır.",
+      "az": "Urmunun tarixi Bazarbaşı qapısının yeri, indi Canbazan meydanı. Bazarbaşı məhəlləsi türk adını qoruyur. Yer təxminidir.",
+      "fa": "جای دروازهٔ تاریخی بازارباشی اورمو که امروز «میدان جانبازان» است. خود محلهٔ بازارباشی نام ترکی‌اش را حفظ کرده است. مکان تقریبی است."
+    },
+    "sources": [
+      "https://urbans.blogfa.com/",
+      "https://urmia100.blogfa.com/post/74"
+    ],
+    "confidence": "low",
+    "approx": true
+  },
+  {
+    "id": "novgecerqapisi",
+    "type": "other",
+    "status": "changed",
+    "lat": 37.555,
+    "lng": 45.069,
+    "original": {
+      "latin": "Novgeçər qapısı",
+      "arabic": "نووگئچر قاپیسی"
+    },
+    "persian": {
+      "fa": "پنجراه",
+      "latin": "Panjrah"
+    },
+    "province": "West Azerbaijan (Urmu)",
+    "period": "20th century",
+    "desc": {
+      "en": "Site of Urmu's Novgeçər gate, now known by the Persian name Panjrah (\"five-way junction\"); Novgeçər survives as a quarter name. Location approximate.",
+      "tr": "Urmu'nun Novgeçer kapısının yeri, bugün Farsça Pencrah (\"beş yol ağzı\") adıyla biliniyor; Novgeçer adı mahalle adı olarak yaşıyor. Konum yaklaşıktır.",
+      "az": "Urmunun Novgeçər qapısının yeri, indi farsca Pəncrah (\"beşyol\") adı ilə tanınır; Novgeçər adı məhəllə adı kimi yaşayır. Yer təxminidir.",
+      "fa": "جای دروازهٔ نووگئچر اورمو که امروز با نام فارسی «پنجراه» شناخته می‌شود؛ نووگئچر به‌عنوان نام محله باقی مانده است. مکان تقریبی است."
+    },
+    "sources": [
+      "https://urbans.blogfa.com/",
+      "https://ensani.ir/fa/article/download/644965"
+    ],
+    "confidence": "low",
+    "approx": true
+  },
+  {
+    "id": "topxana",
+    "type": "square",
+    "status": "changed",
+    "lat": 35.6857,
+    "lng": 51.4206,
+    "original": {
+      "latin": "Topxana meydanı",
+      "arabic": "توپخانه میدانی"
+    },
+    "persian": {
+      "fa": "میدان امام خمینی",
+      "latin": "Meydan-e Imam Khomeini"
+    },
+    "province": "Tehran",
+    "period": "1921 → Sepah; 1979 → Imam Khomeini",
+    "desc": {
+      "en": "Laid out in 1867 under the Qajars as Topxana (\"artillery yard\", from Turkic top \"cannon\"). Renamed Sepah Square after 1921 and Imam Khomeini Square in 1979; many Tehranis still say Tupkhaneh.",
+      "tr": "Kaçarlar döneminde 1867'de Tophane (\"top\" Türkçe kökenli) adıyla kuruldu. 1921'den sonra Sepah Meydanı, 1979'da İmam Humeyni Meydanı yapıldı; birçok Tahranlı hâlâ Tophane der.",
+      "az": "Qacarlar dövründə 1867-ci ildə Topxana (türkcə \"top\" sözündən) adı ilə salınıb. 1921-dən sonra Səpah meydanı, 1979-da İmam Xomeyni meydanı adlandırılıb; çox tehranlı hələ Topxana deyir.",
+      "fa": "در ۱۸۶۷ در دوران قاجار با نام «توپخانه» (از واژهٔ ترکی «توپ») ساخته شد. پس از ۱۲۹۹ «میدان سپه» و در ۱۳۵۷ «میدان امام خمینی» نام گرفت؛ بسیاری از تهرانی‌ها هنوز توپخانه می‌گویند."
+    },
+    "sources": [
+      "https://en.wikipedia.org/wiki/Toopkhaneh",
+      "https://www.iranicaonline.org/articles/bab-e-homayun-august-royal-gate/"
+    ],
+    "confidence": "medium"
   }
 ];
