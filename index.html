@@ -773,6 +773,7 @@ body.admin-open{overflow:hidden}
       // the old popup fades out first; wait for it to disappear
       if (document.querySelector(".leaflet-popup")) { if (tries < 15) setTimeout(function () { reopen(tries + 1); }, 100); return; }
       var id = decodeURIComponent(m[1]);
+      if (window.__adlarimizFocus) { window.__adlarimizFocus(id); return; }
       var item = document.querySelector('.item[data-id="' + (window.CSS && CSS.escape ? CSS.escape(id) : id) + '"]');
       if (item) item.click();
     }
